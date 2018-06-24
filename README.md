@@ -1,2 +1,2 @@
-# shiny_strava
+# shiny-strava
 A project to showcase Strava data using the R package rStrava and Shiny
