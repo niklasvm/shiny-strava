@@ -18,4 +18,7 @@ library(glue)
 library(DT)
 
 
-
+# set redirect url
+Sys.setenv(
+  strava_app_url = glue("http://192.168.99.100:8787/p/6365/")
+)
