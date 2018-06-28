@@ -46,11 +46,11 @@ shinyServer(
       }
     })
     
-    # post auhtorisation code with client id and client secret to get user data
+    # post authorisation code with client id and client secret to get user data
     post_authorisation_code <- reactive({
       authorisation_code <- get_authorisation_code()
       
-      validate(
+      shiny::validate(
         shiny::need(!is.null(authorisation_code),message = 'You need to authenticate')  
       )
       
@@ -71,20 +71,13 @@ shinyServer(
     
     # Get stoken using client id and secret
     get_stoken <- reactive({
-      cache_file <- '.stoken'
       
-      if (file.exists(cache_file)) {
-        stoken <- readRDS(cache_file)
-      } else {
-        token_data <- post_authorisation_code()
-        accesstoken <- token_data$access_token
-        if (!is.null(accesstoken)) {
-          stoken <- add_headers(Authorization = paste0("Bearer ",accesstoken))
-          saveRDS(stoken,cache_file)
-          return(stoken)
-        } else {
-          return(NULL)
-        }
+      token_data <- post_authorisation_code()
+      accesstoken <- token_data$access_token
+      if (!is.null(accesstoken)) {
+        stoken <- add_headers(Authorization = paste0("Bearer ",accesstoken))
+        
+        return(stoken)
       }
     })
     
