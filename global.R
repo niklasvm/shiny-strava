@@ -8,11 +8,9 @@
 # Sys.setenv(
 #   strava_app_name='xxxxx',
 #   strava_app_url = 'xxxxxx',
-#   strava_app_client_id  = xxxx,
+#   strava_app_client_id  = 'xxxx',
 #   strava_app_secret = 'xxxx'
 # )
-
-source('.Rprofile')
 
 # dependencies
 library(shiny)
