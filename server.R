@@ -5,23 +5,7 @@ shinyServer(
   function(input, output,session) {
     
 
-    # APPLICATION AUTHENTICATION --------------------------------------------------------------------
-    
-    get_shiny_url <- reactive({
-      
-      app_url <- paste0(session$clientData$url_protocol,
-                        "//",
-                        session$clientData$url_hostname, 
-                        ifelse(
-                          session$clientData$url_hostname %in% c("127.0.0.1",'192.168.99.100'), 
-                          ":",
-                          session$clientData$url_pathname
-                        ),
-                        session$clientData$url_port
-      )
-      
-      return(app_url)
-    })
+    # APPLICATION AUTHENTICATION ----
     
     # generate authentication link as set out at https://developers.strava.com/docs/authentication/
     get_authorisation_url <- reactive({
@@ -35,50 +19,29 @@ shinyServer(
     get_authorisation_code <- reactive({
       pars <- parseQueryString(session$clientData$url_search)
       
-      if (length(pars) > 0) {
-        if (!is.null(pars$code)) {
-          return(pars$code)
-        } else {
-          return(NULL)
-        }  
-      } else {
-        return(NULL)
-      }
-    })
-    
-    # post authorisation code with client id and client secret to get user data
-    post_authorisation_code <- reactive({
-      authorisation_code <- get_authorisation_code()
-      
-      shiny::validate(
-        shiny::need(!is.null(authorisation_code),message = 'You need to authenticate')  
-      )
-      
-      message(glue('Using authorisation code: {authorisation_code}'))
-      if (!is.null(authorisation_code)) {
-
-        response <- POST(url = 'https://www.strava.com/oauth/token',
-                         body = list(
-                           client_id = Sys.getenv('strava_app_client_id'),
-                           client_secret = Sys.getenv('strava_app_secret'),
-                           code = authorisation_code
-                         )
-        )
-        return(content(response))  
-      }
-      
+      return(pars$code)
     })
     
     # Get stoken using client id and secret
     get_stoken <- reactive({
+      # get authorisation code from url string
+      authorisation_code <- get_authorisation_code()
       
-      token_data <- post_authorisation_code()
+      # validate authorisation code is not NULL
+      shiny::validate(
+        shiny::need(!is.null(authorisation_code),message = 'You need to authenticate')  
+      )
+      
+      # post code to get token data
+      token_data <- post_authorisation_code(authorisation_code)
+      
+      # check access token is available
+      if ('access_token' %in% names(token_data)) message('SUCCESSFULLY AUTHENTICATED')
+      
       accesstoken <- token_data$access_token
-      if (!is.null(accesstoken)) {
-        stoken <- add_headers(Authorization = paste0("Bearer ",accesstoken))
-        
-        return(stoken)
-      }
+      stoken <- add_headers(Authorization = paste0("Bearer ",accesstoken))
+      
+      return(stoken)
     })
     
     output$authUI <- renderUI({
@@ -87,7 +50,7 @@ shinyServer(
       }
     })
     
-    
+    # OTHER ----
     
     output$activity_table <- renderDataTable({
       stoken <- get_stoken()
