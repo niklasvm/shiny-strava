@@ -20,3 +20,11 @@ library(httr)
 library(jsonlite)
 library(glue)
 library(DT)
+
+# validate environment variables are set
+missing <- c('strava_app_url','strava_app_client_id','strava_app_secret') %>% 
+  map_lgl(~ Sys.getenv(.x) == "") %>% 
+  any
+if (missing) stop('Please set all require environment variables')
+
+source('./utils.R')
