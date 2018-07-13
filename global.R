@@ -27,4 +27,10 @@ missing <- c('strava_app_url','strava_app_client_id','strava_app_secret') %>%
   any
 if (missing) stop('Please set all require environment variables')
 
+# generate authentication link as set out at https://developers.strava.com/docs/authentication/
+authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={Sys.getenv(\'strava_app_client_id\')}&response_type=code&redirect_uri={Sys.getenv(\'strava_app_url\')}&approval_prompt=auto&state=')
+  
+
+
+
 source('./utils.R')
