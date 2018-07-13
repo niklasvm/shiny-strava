@@ -1,6 +1,13 @@
+
+# R data and project files
 .Rproj.user
 .Rhistory
 .RData
-.Ruserdata
-.stoken
 .Rprofile
+.Ruserdata
+*.rds
+packrat/lib*/
+
+# ignore cache directory
+cache/*
+packrat/lib*/
