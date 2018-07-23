@@ -24,6 +24,19 @@ shinyServer(
     }
 
     # AUTHENTICATION AND DATA DOWNLOAD ----
+    authorisation_url <- reactive({
+
+      
+      strava_app_url <- input$strava_app_url
+      strava_app_client_id  <- input$strava_app_client_id
+      strava_app_secret <- input$strava_app_secret
+
+      # generate authentication link as set out at https://developers.strava.com/docs/authentication/
+      authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={strava_app_client_id}&response_type=code&redirect_uri={strava_app_url}&approval_prompt=auto&state=')
+
+      return(authorisation_url)
+    
+    })
     
     # parse authentication code from current url if available
     get_authorisation_code <- reactive({
@@ -38,9 +51,9 @@ shinyServer(
           'Click to login:',
           a(
             img(src='btn_strava_connectwith_light.png'),
-            href=authorisation_url
+            href=authorisation_url()
           ),
-          tags$hr()
+          tags$br()
         )
       }
     })
