@@ -20,6 +20,7 @@ library(httr)
 library(jsonlite)
 library(glue)
 library(DT)
+library(leaflet)
 
 # # validate environment variables are set
 # missing <- c('strava_app_url','strava_app_client_id','strava_app_secret') %>% 
@@ -31,8 +32,13 @@ library(DT)
 # authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={Sys.getenv(\'strava_app_client_id\')}&response_type=code&redirect_uri={Sys.getenv(\'strava_app_url\')}&approval_prompt=auto&state=')
   
 
+# Application options ----
+
 # show application api inputs
-ask_api_credentials <- T
+ask_api_credentials <- F
+
+# whether to load cached data (must have authenticated before)
+cache <- T
 
 source('./utils.R')
 source("./dplyr_verbs.R")
