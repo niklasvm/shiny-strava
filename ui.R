@@ -19,6 +19,11 @@ shinyUI(
           inputId = 'selected_types',
           label='Select types'
         ),
+        div(
+          shiny::selectInput('selected_anchor',label='Location anchor',multiple=F,choices=c('')),
+          shiny::numericInput('selected_radius','Radius (m)',min=0,max=Inf,step=1,value=1000)
+        ),
+        
         tags$hr(),
         shiny::actionButton(inputId = 'submit',label='OK'),
         br(),
@@ -26,7 +31,13 @@ shinyUI(
       ),
       mainPanel(
         #plotOutput('heatmap')
-        leafletOutput('leaflet_plot')
+        tags$style(type = "text/css", "#leaflet_plot {height: calc(100vh - 90px) !important;};"),
+        box(
+          leafletOutput('leaflet_plot'),
+          width='100%',
+          height='100%'
+        )
+        
       )
     )
     

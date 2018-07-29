@@ -206,6 +206,15 @@ shinyServer(
         selected = types
       )
       
+      # 3. initialise anchors ----
+      anchors <- activities %>% arrange(desc(start_date)) %>% pull(title)
+      updateSelectInput(
+        session=session,
+        inputId='selected_anchor',
+        choices=anchors,
+        selected=anchors[1]
+      )
+      
     })
     
     # Filter activities ----
@@ -225,6 +234,8 @@ shinyServer(
       
       date_range_filter <- input$selected_dates
       types_filter <- input$selected_types
+      location_anchor <- activities %>% filter(title==input$selected_anchor)
+      radius_filter <- input$selected_radius
       
       
       filtered_activities <- activities %>% 
@@ -232,7 +243,12 @@ shinyServer(
           start_date >= date_range_filter[1] & 
             start_date <= date_range_filter[2]
         ) %>% 
-        filter(type %in% types_filter)
+        filter(type %in% types_filter) %>% 
+        filter_within_radius(
+          lon=location_anchor$start_longitude[1],
+          lat=location_anchor$start_latitude[1],
+          radius=radius_filter
+        )
       
       return(filtered_activities)
     })
