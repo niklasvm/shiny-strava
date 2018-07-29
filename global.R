@@ -32,7 +32,7 @@ library(DT)
   
 
 # show application api inputs
-ask_api_credentials <- F
+ask_api_credentials <- T
 
 source('./utils.R')
 source("./dplyr_verbs.R")
