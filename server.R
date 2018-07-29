@@ -25,11 +25,23 @@ shinyServer(
 
     # AUTHENTICATION AND DATA DOWNLOAD ----
     authorisation_url <- reactive({
-
       
-      strava_app_url <- input$input_strava_app_url
-      strava_app_client_id  <- input$input_strava_app_client_id
-      strava_app_secret <- input$input_strava_app_secret
+      if (ask_api_credentials) {
+        
+        # get variables from user inputs
+        strava_app_url <- input$input_strava_app_url
+        strava_app_client_id  <- input$input_strava_app_client_id
+        strava_app_secret <- input$input_strava_app_secret  
+        
+      } else {
+        
+        # get user inputs from environment variables
+        strava_app_url <- Sys.getenv('strava_app_url')
+        strava_app_client_id  <- Sys.getenv('strava_app_client_id')
+        strava_app_secret <- Sys.getenv('strava_app_secret')
+        
+      }
+      
 
       # generate authentication link as set out at https://developers.strava.com/docs/authentication/
       authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={strava_app_client_id}&response_type=code&redirect_uri={strava_app_url}&approval_prompt=auto&state=')
@@ -48,38 +60,49 @@ shinyServer(
     output$authentication_panel <- renderUI({
       if (!app_parameters$authenticated) {
         
-        # autentication panel containing 4 columns
-        fluidRow(
-          column(3,
-                 textInput(
-                   'input_strava_app_client_id',
-                   "Client ID",
-                   value = Sys.getenv('strava_app_client_id'),
-                 )
-          ),
-          column(
-            3,
-            textInput(
-              'input_strava_app_secret',
-              "Client Secret",
-              value = Sys.getenv('strava_app_secret')
-            )
-          ),
-          column(
-            3,
-            textInput(
-              'input_strava_app_url',
-              "Application URL",
-              value = Sys.getenv('strava_app_url')
-            )
-          ),
-          column(3,
-                 a(img(src = 'btn_strava_connectwith_light.png'),
-                   href = authorisation_url())
-          ),
-          br(),
-          hr()
-        )
+        # if ask_api_credentials is true, show authentication panel containing 4 columns
+        if (ask_api_credentials) {
+          fluidRow(
+            column(3,
+                   textInput(
+                     'input_strava_app_client_id',
+                     "Client ID",
+                     value = Sys.getenv('strava_app_client_id')
+                   )
+            ),
+            column(
+              3,
+              textInput(
+                'input_strava_app_secret',
+                "Client Secret",
+                value = Sys.getenv('strava_app_secret')
+              )
+            ),
+            column(
+              3,
+              textInput(
+                'input_strava_app_url',
+                "Application URL",
+                value = Sys.getenv('strava_app_url')
+              )
+            ),
+            column(3,
+                   a(img(src = 'btn_strava_connectwith_light.png'),
+                     href = authorisation_url())
+            ),
+            br(),
+            hr()
+          )
+        } else {
+          div(
+            a(img(src = 'btn_strava_connectwith_light.png'),
+              href = authorisation_url()),
+            br(),
+            hr()
+          )
+        }
+          
+       
       }
     })
     
