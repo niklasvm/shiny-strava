@@ -7,15 +7,7 @@ shinyUI(
     # show authentication panel
     
     uiOutput('authentication_panel'),
-    column(4,
-           shiny::textInput('strava_app_client_id', "Enter strava_app_client_id"), tags$hr()
-    ),
-    column(4,
-           shiny::textInput('strava_app_secret', "Enter strava_app_secret"), tags$hr()
-    ),
-    column(4,
-           shiny::textInput('strava_app_url', "Enter strava_app_url"), tags$hr()
-    ),
+    
     titlePanel('Shiny Strava'),
     textOutput('welcome_line'),
     sidebarLayout(

@@ -27,9 +27,9 @@ shinyServer(
     authorisation_url <- reactive({
 
       
-      strava_app_url <- input$strava_app_url
-      strava_app_client_id  <- input$strava_app_client_id
-      strava_app_secret <- input$strava_app_secret
+      strava_app_url <- input$input_strava_app_url
+      strava_app_client_id  <- input$input_strava_app_client_id
+      strava_app_secret <- input$input_strava_app_secret
 
       # generate authentication link as set out at https://developers.strava.com/docs/authentication/
       authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={strava_app_client_id}&response_type=code&redirect_uri={strava_app_url}&approval_prompt=auto&state=')
@@ -47,13 +47,38 @@ shinyServer(
     # authentication panel
     output$authentication_panel <- renderUI({
       if (!app_parameters$authenticated) {
-        div(
-          'Click to login:',
-          a(
-            img(src='btn_strava_connectwith_light.png'),
-            href=authorisation_url()
+        
+        # autentication panel containing 4 columns
+        fluidRow(
+          column(3,
+                 textInput(
+                   'input_strava_app_client_id',
+                   "Client ID",
+                   value = Sys.getenv('strava_app_client_id'),
+                 )
           ),
-          tags$br()
+          column(
+            3,
+            textInput(
+              'input_strava_app_secret',
+              "Client Secret",
+              value = Sys.getenv('strava_app_secret')
+            )
+          ),
+          column(
+            3,
+            textInput(
+              'input_strava_app_url',
+              "Application URL",
+              value = Sys.getenv('strava_app_url')
+            )
+          ),
+          column(3,
+                 a(img(src = 'btn_strava_connectwith_light.png'),
+                   href = authorisation_url())
+          ),
+          br(),
+          hr()
         )
       }
     })
