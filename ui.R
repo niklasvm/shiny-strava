@@ -7,6 +7,7 @@ shinyUI(
     # show authentication panel
     
     uiOutput('authentication_panel'),
+    uiOutput('authentication_link'),
     
     titlePanel('Shiny Strava'),
     textOutput('welcome_line'),

@@ -61,7 +61,7 @@ shinyServer(
         if (ask_api_credentials) {
           div(
             fluidRow(
-              column(3,
+              column(2,
                      textInput(
                        'input_strava_app_client_id',
                        "Client ID",
@@ -69,7 +69,7 @@ shinyServer(
                      )
               ),
               column(
-                3,
+                2,
                 textInput(
                   'input_strava_app_secret',
                   "Client Secret",
@@ -77,19 +77,22 @@ shinyServer(
                 )
               ),
               column(
-                3,
+                2,
                 textInput(
                   'input_strava_app_url',
                   "Application URL",
                   value = Sys.getenv('strava_app_url')
                 )
               ),
-              column(3,
-                     a(img(src = 'btn_strava_connectwith_light.png'),
-                       href = authorisation_url())
-              ),
-              br()
+              column(2,
+            
+                     actionButton(
+                       'authent',
+                       label = 'Submit'
+                     )
+              )
             ),
+            br(),
             hr()
           )
           
@@ -105,6 +108,21 @@ shinyServer(
        
       }
     })
+    
+    observeEvent(input$authent,{
+        
+      output$authentication_link <- renderUI({
+        div(
+               a(img(src = 'btn_strava_connectwith_light.png'),
+                 href = authorisation_url()),
+               br(), 
+               hr()
+        )
+          
+      })
+      
+    })
+      
     
     # adds welcome line and triggers authentication to take place
     output$welcome_line <- renderText({

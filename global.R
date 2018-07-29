@@ -36,10 +36,10 @@ library(shinydashboard)
 # Application options ----
 
 # show application api inputs
-ask_api_credentials <- F
+ask_api_credentials <- T
 
 # whether to load cached data (must have authenticated before)
-cache <- T
+cache <- F
 
 source('./utils.R')
 source("./dplyr_verbs.R")
