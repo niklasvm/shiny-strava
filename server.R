@@ -62,37 +62,40 @@ shinyServer(
         
         # if ask_api_credentials is true, show authentication panel containing 4 columns
         if (ask_api_credentials) {
-          fluidRow(
-            column(3,
-                   textInput(
-                     'input_strava_app_client_id',
-                     "Client ID",
-                     value = Sys.getenv('strava_app_client_id')
-                   )
+          div(
+            fluidRow(
+              column(3,
+                     textInput(
+                       'input_strava_app_client_id',
+                       "Client ID",
+                       value = Sys.getenv('strava_app_client_id')
+                     )
+              ),
+              column(
+                3,
+                textInput(
+                  'input_strava_app_secret',
+                  "Client Secret",
+                  value = Sys.getenv('strava_app_secret')
+                )
+              ),
+              column(
+                3,
+                textInput(
+                  'input_strava_app_url',
+                  "Application URL",
+                  value = Sys.getenv('strava_app_url')
+                )
+              ),
+              column(3,
+                     a(img(src = 'btn_strava_connectwith_light.png'),
+                       href = authorisation_url())
+              ),
+              br()
             ),
-            column(
-              3,
-              textInput(
-                'input_strava_app_secret',
-                "Client Secret",
-                value = Sys.getenv('strava_app_secret')
-              )
-            ),
-            column(
-              3,
-              textInput(
-                'input_strava_app_url',
-                "Application URL",
-                value = Sys.getenv('strava_app_url')
-              )
-            ),
-            column(3,
-                   a(img(src = 'btn_strava_connectwith_light.png'),
-                     href = authorisation_url())
-            ),
-            br(),
             hr()
           )
+          
         } else {
           div(
             a(img(src = 'btn_strava_connectwith_light.png'),
