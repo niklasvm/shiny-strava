@@ -21,6 +21,7 @@ library(jsonlite)
 library(glue)
 library(DT)
 library(leaflet)
+library(shinydashboard)
 
 # # validate environment variables are set
 # missing <- c('strava_app_url','strava_app_client_id','strava_app_secret') %>% 
