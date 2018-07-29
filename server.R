@@ -5,9 +5,6 @@ source('global.R')
 shinyServer(
   function(input, output,session) {
     
-    # whether to load cached data (must have authenticated before)
-    cache <- F
-    
     if (!cache) {
       # api
       app_parameters <- reactiveValues(
@@ -181,17 +178,18 @@ shinyServer(
       
     })
     
-    # UI ----
+    # Initialise UI ----
     observeEvent(app_parameters$activities,{
-      message('Update UI')
+      message('Initialise UI')
       
       activities <- app_parameters$activities
       
+      # filter out activities without polyline
+      activities <- activities %>% 
+        filter(!is.na(map.summary_polyline))
+      
+      # 1. initialise dates ----
       daterange <- range(as.Date(activities$start_date))
-      
-      
-      
-      # update dates
       updateDateRangeInput(session=session,
                            inputId = 'selected_dates',
                            start = Sys.Date()-30,
@@ -199,120 +197,79 @@ shinyServer(
                            min = daterange[1],
                            max = strftime(Sys.Date(),'%Y-%m-%d')
       )
-    })
-    
-    observeEvent(input$selected_dates,{
-      if (!app_parameters$authenticated) return()
-      
-      activities <- app_parameters$activities
-      selected_daterange <- input$selected_dates
-    
-      
-      # update types
-      types <- activities %>% 
-        filter(start_date >= selected_daterange[1] & 
-                 start_date <= selected_daterange[2]) %>% 
-        select(type) %>% distinct %>% .[[1]] %>% sort
-      
+      # 2. initialise types ----
+      types <- activities$type %>% unique %>% sort
       updateCheckboxGroupInput(
-        session=session,
+        session = session,
         inputId = 'selected_types',
-        choices=types,
-        selected=types
+        choices = types,
+        selected = types
       )
+      
     })
     
-    observeEvent(list(input$selected_dates,input$selected_types),{
-      if (!app_parameters$authenticated) return()
-      
-      activities <- app_parameters$activities
-      selected_daterange <- input$selected_dates
-      selected_types <- input$selected_types
-      
-      # update cities
-      cities <- activities %>% 
-        filter(
-          start_date >= selected_daterange[1] & 
-            start_date <= selected_daterange[2]
-        ) %>% 
-        filter(type %in% selected_types) %>% 
-        select(location_city) %>% distinct %>% .[[1]] %>% sort
-      
-      updateCheckboxGroupInput(
-        session=session,
-        inputId = 'selected_cities',
-        choices=cities,
-        selected=cities
-      )
-    })
-    
-    # ACTIVITY STATS ----
-    output$activity_stats <- renderText({
-      if (!app_parameters$authenticated) return()
-      
-      activities <- app_parameters$activities
-      selected_daterange <- input$selected_dates
-      selected_types <- input$selected_types
-      
-      
-      filtered_activities <- activities %>% 
-        filter(
-          start_date >= selected_daterange[1] & 
-            start_date <= selected_daterange[2]
-        ) %>% 
-        filter(type %in% selected_types) %>% 
-        #filter(location_city %in% cities) %>% 
-        filter(!is.null(map.summary_polyline))
-      
-      glue('{nrow(filtered_activities)} activities')
-    })
-    
-    # HEATMAP ----
+    # Filter activities ----
     
     get_filtered_activities <- eventReactive(input$submit,{
       if (!app_parameters$authenticated) return()
       
+      message('Filter activities')
+      
+      # all activities
       activities <- app_parameters$activities
-      selected_daterange <- input$selected_dates
-      selected_types <- input$selected_types
+      
+      # filter out activities without polyline
+      activities <- activities %>% 
+        filter(!is.na(map.summary_polyline))
+      
+      
+      date_range_filter <- input$selected_dates
+      types_filter <- input$selected_types
       
       
       filtered_activities <- activities %>% 
         filter(
-          start_date >= selected_daterange[1] & 
-            start_date <= selected_daterange[2]
+          start_date >= date_range_filter[1] & 
+            start_date <= date_range_filter[2]
         ) %>% 
-        filter(type %in% selected_types) %>% 
-        #filter(location_city %in% cities) %>% 
-        filter(!is.null(map.summary_polyline)) %>% 
-        filter(!is.na(map.summary_polyline))
+        filter(type %in% types_filter)
       
       return(filtered_activities)
     })
     
-    output$heatmap <- renderPlot({
-      
+    output$leaflet_plot <- renderLeaflet({
       filtered_activities <- get_filtered_activities()
-      acts <- 1:nrow(filtered_activities)
-      
-      rStrava:::get_heat_map.actframe(act_data=filtered_activities,
-                   acts = acts,
-                   col = 'darkgreen', 
-                   size = 2, 
-                   dist = F, 
-                   f = 0.5
+      saveRDS(filtered_activities,'filtered_activities.rds')
+      filtered_activities %>% get_leaflet_heat_map(
+        colour='red',
+        weight = 3,
+        opacity=0.01
       )
     })
     
-    output$activity_table <- renderDataTable({
-      stoken <- get_stoken()
-      
-      message('Downloading activities...')
-      my_acts <- get_activity_list(stoken)
-      saveRDS(my_acts,'my_acts.rds')
-      my_acts.df <- compile_activities(my_acts, acts = NULL, units = "metric")
-      my_acts.df
-    })
+    # output$heatmap <- renderPlot({
+    #   
+    #   filtered_activities <- get_filtered_activities()
+    #   acts <- 1:nrow(filtered_activities)
+    #   
+    #   rStrava:::get_heat_map.actframe(act_data=filtered_activities,
+    #                acts = acts,
+    #                col = 'darkgreen', 
+    #                size = 2, 
+    #                dist = F, 
+    #                f = 0.5
+    #   )
+    # })
+    
+    # output$activity_table <- renderDataTable({
+    #   stoken <- get_stoken()
+    #   
+    #   message('Downloading activities...')
+    #   my_acts <- get_activity_list(stoken)
+    #   saveRDS(my_acts,'my_acts.rds')
+    #   my_acts.df <- compile_activities(my_acts, acts = NULL, units = "metric")
+    #   my_acts.df
+    # })
     
     # # Download data
     # output$downloadData <- downloadHandler(
