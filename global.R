@@ -23,6 +23,7 @@ library(glue)
 library(DT)
 library(leaflet)
 library(shinydashboard)
+library(shinythemes)
 
 # # validate environment variables are set
 # missing <- c('strava_app_url','strava_app_client_id','strava_app_secret') %>% 
@@ -41,6 +42,10 @@ ask_api_credentials <- T
 
 # whether to load cached data (must have authenticated before)
 cache <- F
+
+
+
+# file dependencies ----
 
 source('./utils.R')
 source("./dplyr_verbs.R")
