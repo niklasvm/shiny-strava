@@ -43,8 +43,6 @@ ask_api_credentials <- T
 # whether to load cached data (must have authenticated before)
 cache <- F
 
-
-
 # file dependencies ----
 
 source('./utils.R')
