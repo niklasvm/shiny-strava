@@ -1,5 +1,5 @@
 message('server.R sourced')
-source('global.R')
+#source('global.R')
 
 
 shinyServer(
@@ -85,8 +85,7 @@ shinyServer(
                 )
               ),
               column(3,
-                     a(img(src = 'btn_strava_connectwith_light.png'),
-                       href = authorisation_url())
+                     uiOutput('auth_submit_button')
               ),
               br()
             ),
@@ -95,8 +94,7 @@ shinyServer(
           
         } else {
           div(
-            a(img(src = 'btn_strava_connectwith_light.png'),
-              href = authorisation_url()),
+            uiOutput('auth_submit_button'),
             br(),
             hr()
           )
@@ -104,6 +102,13 @@ shinyServer(
           
        
       }
+    })
+    
+    output$auth_submit_button <- renderUI({
+      a(
+        img(src = 'btn_strava_connectwith_light.png'),
+        href = authorisation_url()
+      )
     })
     
     # adds welcome line and triggers authentication to take place

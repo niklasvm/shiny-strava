@@ -3,3 +3,6 @@
 *.jpg binary
 
 * text=auto
+
+# text files
+*.R text
