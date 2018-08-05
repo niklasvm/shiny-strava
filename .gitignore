@@ -9,4 +9,5 @@ packrat/lib*/
 # ignore cache directory
 cache/*
 packrat/lib*/
+packrat/src/*
 .httr-oauth
