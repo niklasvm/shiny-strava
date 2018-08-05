@@ -1,17 +1,20 @@
 message('ui.R sourced')
-source('global.R')
+#source('global.R')
 
 
 shinyUI(
   fluidPage(
-    # show authentication panel
+    theme = shinytheme("united"),
+    
     
     uiOutput('authentication_panel'),
+    #titlePanel('Shiny Strava'),
     
-    titlePanel('Shiny Strava'),
     textOutput('welcome_line'),
+    
     sidebarLayout(
       sidebarPanel(
+        
         shiny::dateRangeInput(inputId = 'selected_dates',
                               label = 'Select date range'
         ),
@@ -30,16 +33,19 @@ shinyUI(
         img(src='api_logo_pwrdBy_strava_stack_light.png')
       ),
       mainPanel(
-        #plotOutput('heatmap')
-        tags$style(type = "text/css", "#leaflet_plot {height: calc(100vh - 90px) !important;};"),
+        # manage leaflet plot size
+        tags$style(type = "text/css", "#leaflet_plot {height: calc(100vh - 80px) !important;};"),
+        
+        # leaflet output
         box(
           leafletOutput('leaflet_plot'),
           width='100%',
           height='100%'
-        )
-        
+        )  
       )
     )
     
   )
+  
+  
 )
