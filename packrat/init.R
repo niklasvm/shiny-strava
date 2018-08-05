@@ -1,3 +1,4 @@
+unlink('./packrat/lib-R')
 local({
 
   ## Helper function to get the path to the library directory for a

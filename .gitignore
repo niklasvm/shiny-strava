@@ -2,12 +2,14 @@
 .Rproj.user
 .Rhistory
 .RData
-.Rprofile
 .Ruserdata
 *.rds
 packrat/lib*/
+
 # ignore cache directory
 cache/*
 packrat/lib*/
 packrat/src/*
 .httr-oauth
+
+credentials.R
