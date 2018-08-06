@@ -198,7 +198,7 @@ shinyServer(
       daterange <- range(as.Date(activities$start_date))
       updateDateRangeInput(session=session,
                            inputId = 'selected_dates',
-                           start = Sys.Date()-30,
+                           start = lubridate::floor_date(Sys.Date(),unit = 'year'),
                            end = strftime(Sys.Date(),'%Y-%m-%d'),
                            min = daterange[1],
                            max = strftime(Sys.Date(),'%Y-%m-%d')
@@ -225,6 +225,7 @@ shinyServer(
     
     # Filter activities ----
     
+    #get_filtered_activities <- reactive({
     get_filtered_activities <- eventReactive(input$submit,{
       if (!app_parameters$authenticated) return()
       
@@ -259,12 +260,13 @@ shinyServer(
       return(filtered_activities)
     })
     
+    # Plot map ----
     output$leaflet_plot <- renderLeaflet({
       filtered_activities <- get_filtered_activities()
       saveRDS(filtered_activities,'filtered_activities.rds')
       filtered_activities %>% get_leaflet_heat_map(
         colour='red',
-        weight = 3,
+        weight = 1,
         opacity=0.01
       )
     })
