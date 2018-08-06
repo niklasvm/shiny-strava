@@ -24,7 +24,7 @@ shinyUI(
         ),
         div(
           shiny::selectInput('selected_anchor',label='Location anchor',multiple=F,choices=c('')),
-          shiny::numericInput('selected_radius','Radius (m)',min=0,max=Inf,step=1,value=1000)
+          shiny::numericInput('selected_radius','Radius (m)',min=0,max=Inf,step=1000,value=1000)
         ),
         
         tags$hr(),
