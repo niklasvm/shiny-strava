@@ -1,6 +1,18 @@
 # global.R is sourced when the application is lauched
 message('global.R sourced')
 
+# dependencies
+library(shiny)
+library(rStrava)
+library(tidyverse)
+library(httr)
+library(jsonlite)
+library(glue)
+library(DT)
+library(leaflet)
+library(shinydashboard)
+library(shinythemes)
+
 # Application options ----
 
 # application url
@@ -30,18 +42,6 @@ cache <- T
 try({
   source('./credentials.R')
 })
-
-# dependencies
-library(shiny)
-library(rStrava)
-library(tidyverse)
-library(httr)
-library(jsonlite)
-library(glue)
-library(DT)
-library(leaflet)
-library(shinydashboard)
-library(shinythemes)
 
 # file dependencies ----
 
