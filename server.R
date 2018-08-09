@@ -5,8 +5,9 @@ message('server.R sourced')
 shinyServer(
   function(input, output,session) {
     
+    # MANAGE CACHE ----
     if (!cache) {
-      # api
+      # app_parameters is a list that holds authentication data and activity list
       app_parameters <- reactiveValues(
         authenticated=F
       )  
@@ -21,6 +22,7 @@ shinyServer(
     }
 
     # AUTHENTICATION AND DATA DOWNLOAD ----
+    # authorisation_url ----
     authorisation_url <- reactive({
       
       if (ask_api_credentials) {
@@ -48,63 +50,72 @@ shinyServer(
     })
     
     # parse authentication code from current url if available
+    # get_authorisation_code ----
     get_authorisation_code <- reactive({
       pars <- parseQueryString(session$clientData$url_search)
       return(pars$code)
     })
     
-    # authentication panel
+    # output$authentication_panel ----
     output$authentication_panel <- renderUI({
       if (!app_parameters$authenticated) {
         
         # if ask_api_credentials is true, show authentication panel containing 4 columns
         if (ask_api_credentials) {
-          div(
-            fluidRow(
-              column(3,
-                     textInput(
-                       'input_strava_app_client_id',
-                       "Client ID",
-                       value = Sys.getenv('strava_app_client_id')
-                     )
-              ),
-              column(
-                3,
-                textInput(
-                  'input_strava_app_secret',
-                  "Client Secret",
-                  value = Sys.getenv('strava_app_secret')
+          fluidRow(
+            box(
+              width=12,
+              div(
+                fluidRow(
+                  column(3,
+                         textInput(
+                           'input_strava_app_client_id',
+                           "Client ID",
+                           value = Sys.getenv('strava_app_client_id')
+                         )
+                  ),
+                  column(
+                    3,
+                    textInput(
+                      'input_strava_app_secret',
+                      "Client Secret",
+                      value = Sys.getenv('strava_app_secret')
+                    )
+                  ),
+                  column(
+                    3,
+                    textInput(
+                      'input_strava_app_url',
+                      "Application URL",
+                      value = Sys.getenv('strava_app_url')
+                    )
+                  ),
+                  column(3,
+                         uiOutput('auth_submit_button')
+                  ),
+                  br()
                 )
-              ),
-              column(
-                3,
-                textInput(
-                  'input_strava_app_url',
-                  "Application URL",
-                  value = Sys.getenv('strava_app_url')
-                )
-              ),
-              column(3,
-                     uiOutput('auth_submit_button')
-              ),
-              br()
-            ),
-            br(),
-            hr()
+              )
+            )
           )
           
         } else {
-          div(
-            uiOutput('auth_submit_button'),
-            br(),
-            hr()
+          fluidRow(
+            box(
+              width=12,
+              div(
+                uiOutput('auth_submit_button')
+                
+              )
+            )
           )
         }
           
        
       }
     })
-
+    
+    # output$auth_submit_button ----
     output$auth_submit_button <- renderUI({
       a(
         img(src = 'btn_strava_connectwith_light.png'),
@@ -112,6 +123,7 @@ shinyServer(
       )
     })
 
+    # output$welcome_line ----
     # adds welcome line and triggers authentication to take place
     output$welcome_line <- renderText({
       stoken <- get_stoken()
@@ -119,6 +131,7 @@ shinyServer(
       glue('Welcome {token_data$athlete$firstname} {token_data$athlete$lastname}')
     })
     
+    # get_stoken ----
     # Get stoken using client id and secret
     get_stoken <- reactive({
       if (is.null(app_parameters$stoken)) {
@@ -185,6 +198,7 @@ shinyServer(
     })
     
     # Initialise UI ----
+    # update form controls
     observeEvent(app_parameters$activities,{
       message('Initialise UI')
       
@@ -223,10 +237,9 @@ shinyServer(
       
     })
     
-    # Filter activities ----
-    
-    #get_filtered_activities <- reactive({
-    get_filtered_activities <- eventReactive(input$submit,{
+    # get_filtered_activities ----
+    get_filtered_activities <- reactive({
+    #get_filtered_activities <- eventReactive(input$submit,{
       if (!app_parameters$authenticated) return()
       
       message('Filter activities')
@@ -260,55 +273,22 @@ shinyServer(
       return(filtered_activities)
     })
     
-    # Plot map ----
+    # output$leaflet_plot ----
     output$leaflet_plot <- renderLeaflet({
       filtered_activities <- get_filtered_activities()
-      saveRDS(filtered_activities,'filtered_activities.rds')
-      filtered_activities %>% get_leaflet_heat_map(
-        colour='red',
-        weight = 1,
-        opacity=0.01
+      
+      shiny::validate(
+        shiny::need(nrow(filtered_activities) > 0,message = 'No activities selected')  
       )
+      
+      filtered_activities %>% 
+        get_leaflet_heat_map(
+          colour='blue',
+          weight = 2,
+          opacity=0.01
+        )
     })
     
-    # output$heatmap <- renderPlot({
-    #   
-    #   filtered_activities <- get_filtered_activities()
-    #   acts <- 1:nrow(filtered_activities)
-    #   
-    #   rStrava:::get_heat_map.actframe(act_data=filtered_activities,
-    #                acts = acts,
-    #                col = 'darkgreen', 
-    #                size = 2, 
-    #                dist = F, 
-    #                f = 0.5
-    #   )
-    # })
     
-    # output$activity_table <- renderDataTable({
-    #   stoken <- get_stoken()
-    #   
-    #   message('Downloading activities...')
-    #   my_acts <- get_activity_list(stoken)
-    #   saveRDS(my_acts,'my_acts.rds')
-    #   my_acts.df <- compile_activities(my_acts, acts = NULL, units = "metric")
-    #   my_acts.df
-    # })
-    
-    # # Download data
-    # output$downloadData <- downloadHandler(
-    #   filename = function() {
-    #     paste('StravaActivities-', Sys.Date(), '.csv', sep='')
-    #   },
-    #   content = function(con) {
-    #     # get and save all activities
-    #     my_acts <- get_activity_list(get_stoken())
-    #     
-    #     # Convert activities list to data frame
-    #     my_acts.df <- compile_activities(my_acts, acts = NULL, units = "metric")
-    #     
-    #     write.csv(my_acts.df, con, row.names = FALSE)
-    #   }
-    # )
   }
 )
