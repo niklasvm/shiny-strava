@@ -3,11 +3,19 @@ message('global.R sourced')
 
 # Application options ----
 
+# application url
+strava_app_url  <-  glue('http://127.0.0.1:1234')
+#strava_app_url = '192.168.0.94:3838/shiny-strava'
+# set as environment variable
+Sys.setenv(
+  strava_app_url = strava_app_url
+)
+
 # show application api inputs
 ask_api_credentials <- F
 
 # whether to load cached data (must have authenticated before)
-cache <- F
+cache <- T
 
 # Load credentials if available ----
 
