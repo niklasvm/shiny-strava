@@ -1,7 +1,3 @@
-message('server.R sourced')
-#source('global.R')
-
-
 shinyServer(
   function(input, output,session) {
     
@@ -9,8 +5,10 @@ shinyServer(
     if (!cache) {
       # app_parameters is a list that holds authentication data and activity list
       app_parameters <- reactiveValues(
-        authenticated=F
-      )  
+        authenticated=F,
+        credentials=list()
+      )
+      
     } else {
       # cache
       app_parameters <- reactiveValues(
@@ -22,31 +20,89 @@ shinyServer(
     }
 
     # AUTHENTICATION AND DATA DOWNLOAD ----
-    # authorisation_url ----
-    authorisation_url <- reactive({
-      
-      if (ask_api_credentials) {
+    
+    # get_stoken ----
+    # Get stoken using client id and secret
+    get_stoken <- reactive({
+      if (is.null(app_parameters$stoken)) {
         
-        # get variables from user inputs
-        strava_app_url <- input$input_strava_app_url
-        strava_app_client_id  <- input$input_strava_app_client_id
-        strava_app_secret <- input$input_strava_app_secret  
+        # parse authorisation code from url string
+        authorisation_code <- get_authorisation_code()
+        app_parameters$authorisation_code <- authorisation_code
+        
+        # validate authorisation code is not NULL
+        shiny::validate(
+          shiny::need(!is.null(authorisation_code),message = 'You need to authenticate')  
+        )
+        
+        # post code to get token data
+        message('Using client id: ',Sys.getenv('strava_app_client_id'))
+        message('Using secret: ',Sys.getenv('strava_app_secret'))
+        message('Using authorisation code: ',authorisation_code)
+        
+        token_data <- post_authorisation_code(
+          authorisation_code = authorisation_code,
+          strava_app_client_id = Sys.getenv('strava_app_client_id'),
+          strava_app_secret = Sys.getenv('strava_app_secret')
+        )
+          
+        
+        # check access token is available
+        if ('access_token' %in% names(token_data)) message('SUCCESSFULLY AUTHENTICATED')
+        
+        
+        accesstoken <- token_data$access_token
+        stoken <- add_headers(Authorization = paste0("Bearer ",accesstoken))
+        
+        # set app parameters
+        app_parameters$token_data <- token_data
+        app_parameters$stoken <- stoken
+        app_parameters$authenticated <- T
+        
+        # cache
+        dir.create('cache',showWarnings = F)
+        saveRDS(token_data,'./cache/token_data.rds')
+        saveRDS(stoken,'./cache/stoken.rds')
         
       } else {
-        
-        # get user inputs from environment variables
-        strava_app_url <- Sys.getenv('strava_app_url')
-        strava_app_client_id  <- Sys.getenv('strava_app_client_id')
-        strava_app_secret <- Sys.getenv('strava_app_secret')
-        
+        stoken <- app_parameters$stoken
       }
       
-
+      return(stoken)
+    })
+    
+    # capture credentials from form -----
+    observeEvent(c(input$input_strava_app_url,input$input_strava_app_client_id,input$input_strava_app_secret),{
+      
+      # load into app_parameters to dynamically update url in link
+      app_parameters$credentials <- list(
+        strava_app_url = input$input_strava_app_url,
+        strava_app_client_id  = as.numeric(input$input_strava_app_client_id),
+        strava_app_secret = input$input_strava_app_secret
+      )
+      
+      # Set environment variables
+      Sys.setenv(
+        strava_app_url = input$input_strava_app_url,
+        strava_app_client_id  = as.numeric(input$input_strava_app_client_id),
+        strava_app_secret = input$input_strava_app_secret
+      )
+      
+    })
+    
+    # generate authorisation_url ----
+    authorisation_url <- reactive({
       # generate authentication link as set out at https://developers.strava.com/docs/authentication/
-      authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={strava_app_client_id}&response_type=code&redirect_uri={strava_app_url}&approval_prompt=auto&state=')
+      if (ask_api_credentials) {
+        # generate from form
+        authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={app_parameters$credentials$strava_app_client_id}&response_type=code&redirect_uri={app_parameters$credentials$strava_app_url}&approval_prompt=auto&state=')
+      } else {
+        # generate from environment variables
+        authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={Sys.getenv(\'strava_app_client_id\')}&response_type=code&redirect_uri={Sys.getenv(\'strava_app_url\')}&approval_prompt=auto&state=')
+      }
 
       return(authorisation_url)
-    
+      
     })
     
     # parse authentication code from current url if available
@@ -129,45 +185,6 @@ shinyServer(
       stoken <- get_stoken()
       token_data <- app_parameters$token_data
       glue('Welcome {token_data$athlete$firstname} {token_data$athlete$lastname}')
-    })
-    
-    # get_stoken ----
-    # Get stoken using client id and secret
-    get_stoken <- reactive({
-      if (is.null(app_parameters$stoken)) {
-        # get authorisation code from url string
-        authorisation_code <- get_authorisation_code()
-        app_parameters$authorisation_code <- authorisation_code
-        
-        # validate authorisation code is not NULL
-        shiny::validate(
-          shiny::need(!is.null(authorisation_code),message = 'You need to authenticate')  
-        )
-        
-        # post code to get token data
-        token_data <- post_authorisation_code(authorisation_code)
-        
-        # check access token is available
-        if ('access_token' %in% names(token_data)) message('SUCCESSFULLY AUTHENTICATED')
-        
-        accesstoken <- token_data$access_token
-        stoken <- add_headers(Authorization = paste0("Bearer ",accesstoken))
-        
-        # set app parameters
-        app_parameters$token_data <- token_data
-        app_parameters$stoken <- stoken
-        app_parameters$authenticated <- T
-        
-        # cache
-        dir.create('cache',showWarnings = F)
-        saveRDS(token_data,'./cache/token_data.rds')
-        saveRDS(stoken,'./cache/stoken.rds')
-        
-      } else {
-        stoken <- app_parameters$stoken
-      }
-      
-      return(stoken)
     })
     
     # triggers when the app has successfullly authenticated

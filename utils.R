@@ -1,9 +1,14 @@
-post_authorisation_code <- function(authorisation_code) {
+post_authorisation_code <- function(
+  authorisation_code,
+  strava_app_client_id,
+  strava_app_secret
+) {
+    
   # post authorisation code
   response <- POST(url = 'https://www.strava.com/oauth/token',
                    body = list(
-                     client_id = Sys.getenv('strava_app_client_id'),
-                     client_secret = Sys.getenv('strava_app_secret'),
+                     client_id = strava_app_client_id,
+                     client_secret = strava_app_secret,
                      code = authorisation_code
                    )
   )

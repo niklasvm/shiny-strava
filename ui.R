@@ -1,7 +1,3 @@
-message('ui.R sourced')
-#source('global.R')
-
-
 shinyUI(
   dashboardPage(
     #skin = 'green',
