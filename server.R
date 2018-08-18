@@ -21,6 +21,12 @@ shinyServer(
 
     # AUTHENTICATION AND DATA DOWNLOAD ----
     
+    # get authentication state for conditional panel
+    output$not_authenticated <- reactive({
+      !app_parameters$authenticated
+    })
+    outputOptions(output,'not_authenticated', suspendWhenHidden = FALSE)
+    
     # get_stoken ----
     # Get stoken using client id and secret
     get_stoken <- reactive({
@@ -184,7 +190,7 @@ shinyServer(
     output$welcome_line <- renderText({
       stoken <- get_stoken()
       token_data <- app_parameters$token_data
-      glue('Welcome {token_data$athlete$firstname} {token_data$athlete$lastname}')
+      glue('{token_data$athlete$firstname} {token_data$athlete$lastname}')
     })
     
     # triggers when the app has successfullly authenticated
@@ -200,7 +206,6 @@ shinyServer(
         
         # process
         my_acts.df <- my_acts %>% 
-          compile_activities(acts = NULL, units = "metric") %>% 
           tidy_activities()
         
         
@@ -254,10 +259,34 @@ shinyServer(
       
     })
     
+    # observe period ----
+    observeEvent(input$selected_period,{
+      period <- input$selected_period
+      cat(period)
+      
+      dates <- periods[[period]]
+      
+      
+      updateDateRangeInput(session=session,
+                           inputId = 'selected_dates',
+                           start = dates[1],
+                           end = dates[2])
+      
+      
+    })
+    
     # get_filtered_activities ----
     get_filtered_activities <- reactive({
-    #get_filtered_activities <- eventReactive(input$submit,{
+      #get_filtered_activities <- eventReactive(input$submit,{
       if (!app_parameters$authenticated) return()
+      
+      # validate inputs are available
+      req(
+        input$selected_dates,
+        input$selected_types,
+        input$selected_anchor,
+        input$selected_radius
+      )
       
       message('Filter activities')
       
@@ -278,7 +307,7 @@ shinyServer(
       filtered_activities <- activities %>% 
         filter(
           start_date >= date_range_filter[1] & 
-            start_date <= date_range_filter[2]
+            start_date <= date_range_filter[2] + hms('23:59:59')
         ) %>% 
         filter(type %in% types_filter) %>% 
         filter_within_radius(
@@ -292,6 +321,7 @@ shinyServer(
     
     # output$leaflet_plot ----
     output$leaflet_plot <- renderLeaflet({
+      
       filtered_activities <- get_filtered_activities()
       
       shiny::validate(
@@ -300,9 +330,10 @@ shinyServer(
       
       filtered_activities %>% 
         get_leaflet_heat_map(
-          colour='blue',
+          colour='red',
           weight = 2,
-          opacity=0.01
+          opacity=0.01,
+          markers = T
         )
     })
     
