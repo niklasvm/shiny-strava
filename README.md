@@ -13,12 +13,39 @@ A project to showcase Strava data using the R package rStrava and Shiny
 
 ## To Do
 
+* Modularise code
+  * AUthentication
+  * Per logical part of app
 * Organise code structure
-* Change to shiny dashboard
+* Better logging
+  * Activity download
+  * Activity Tidying
+  * Map/calculations
 * Merge into master
+
 * Activity filter ideas
   * Date range 
   * Last x days
   * Distance
   
-  * 
+* Dashboard
+  * List of activities
+    * Inputs
+      * Date
+      * Type
+      * Workout type
+    * Output
+      * Boxes
+        * Number of activities
+        * Distance
+        * Time
+        * Pace
+        * Heart rate
+        * Ascent
+      * List of activities
+      * Map
+      * Graphs
+        * Histogram values
+        * Cumulative values 
+    
+  

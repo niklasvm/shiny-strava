@@ -112,65 +112,11 @@ shinyServer(
       return(pars$code)
     })
     
-    # output$authentication_panel ----
-    output$authentication_panel <- renderUI({
-      if (!app_parameters$authenticated) {
-        
-        # if ask_api_credentials is true, show authentication panel containing 4 columns
-        if (ask_api_credentials) {
-          fluidRow(
-            box(
-              width=12,
-              div(
-                fluidRow(
-                  column(3,
-                         textInput(
-                           'input_strava_app_client_id',
-                           "Client ID",
-                           value = Sys.getenv('strava_app_client_id')
-                         )
-                  ),
-                  column(
-                    3,
-                    textInput(
-                      'input_strava_app_secret',
-                      "Client Secret",
-                      value = Sys.getenv('strava_app_secret')
-                    )
-                  ),
-                  column(
-                    3,
-                    textInput(
-                      'input_strava_app_url',
-                      "Application URL",
-                      value = Sys.getenv('strava_app_url')
-                    )
-                  ),
-                  column(3,
-                         uiOutput('auth_submit_button')
-                  ),
-                  br()
-                )
-              )
-            )
-          )
-          
-        } else {
-          fluidRow(
-            box(
-              width=12,
-              div(
-                uiOutput('auth_submit_button')
-                
-              )
-            )
-          )
-        }
-          
-       
-      }
+    output$not_authenticated <- reactive({
+      !app_parameters$authenticated
     })
-    
+    outputOptions(output,'not_authenticated', suspendWhenHidden = FALSE)
+  
     # output$auth_submit_button ----
     output$auth_submit_button <- renderUI({
       a(
@@ -180,11 +126,11 @@ shinyServer(
     })
 
     # output$welcome_line ----
-    # adds welcome line and triggers authentication to take place
+    # adds welcome line and triggers authentication and data download to take place
     output$welcome_line <- renderText({
       stoken <- get_stoken()
       token_data <- app_parameters$token_data
-      glue('Welcome {token_data$athlete$firstname} {token_data$athlete$lastname}')
+      glue('{token_data$athlete$firstname} {token_data$athlete$lastname}')
     })
     
     # triggers when the app has successfullly authenticated
@@ -196,11 +142,10 @@ shinyServer(
         stoken <- app_parameters$stoken
         
         message('Downloading activities...')
-        my_acts <- get_activity_list(stoken)
+        my_acts <- get_activity_list_by_page(stoken,per_page=100,pages=1)
         
         # process
         my_acts.df <- my_acts %>% 
-          compile_activities(acts = NULL, units = "metric") %>% 
           tidy_activities()
         
         
@@ -229,7 +174,7 @@ shinyServer(
       daterange <- range(as.Date(activities$start_date))
       updateDateRangeInput(session=session,
                            inputId = 'selected_dates',
-                           start = lubridate::floor_date(Sys.Date(),unit = 'year'),
+                           start = lubridate::floor_date(Sys.Date(),unit = 'month'),
                            end = strftime(Sys.Date(),'%Y-%m-%d'),
                            min = daterange[1],
                            max = strftime(Sys.Date(),'%Y-%m-%d')
@@ -254,10 +199,34 @@ shinyServer(
       
     })
     
+    # observe period ----
+    observeEvent(input$selected_period,{
+      period <- input$selected_period
+      cat(period)
+      
+      dates <- periods[[period]]
+      
+      
+      updateDateRangeInput(session=session,
+                           inputId = 'selected_dates',
+                           start = dates[1],
+                           end = dates[2])
+      
+      
+    })
+    
     # get_filtered_activities ----
     get_filtered_activities <- reactive({
     #get_filtered_activities <- eventReactive(input$submit,{
       if (!app_parameters$authenticated) return()
+      
+      # validate inputs are available
+      req(
+        input$selected_dates,
+        input$selected_types,
+        input$selected_anchor,
+        input$selected_radius
+      )
       
       message('Filter activities')
       
@@ -278,7 +247,7 @@ shinyServer(
       filtered_activities <- activities %>% 
         filter(
           start_date >= date_range_filter[1] & 
-            start_date <= date_range_filter[2]
+            start_date <= date_range_filter[2] + hms('23:59:59')
         ) %>% 
         filter(type %in% types_filter) %>% 
         filter_within_radius(
@@ -292,6 +261,7 @@ shinyServer(
     
     # output$leaflet_plot ----
     output$leaflet_plot <- renderLeaflet({
+      
       filtered_activities <- get_filtered_activities()
       
       shiny::validate(
@@ -300,12 +270,69 @@ shinyServer(
       
       filtered_activities %>% 
         get_leaflet_heat_map(
-          colour='blue',
+          colour='red',
           weight = 2,
-          opacity=0.01
+          opacity=0.01,
+          markers = T
         )
     })
+
+    output$histogram_plot <- renderPlot({
+      filtered_activities <- get_filtered_activities()
+      ggplot(filtered_activities,
+             aes(x=distance))+
+        geom_histogram()+
+        labs(title='Distance')+
+        theme_minimal()
+    })
     
+    output$activity_table <- renderTable({
+      filtered_activities <- get_filtered_activities()
+      filtered_activities %>% 
+        select(title,distance,moving_time,total_elevation_gain)
+    })
     
+    output$total_activities <- renderValueBox({
+      filtered_activities <- get_filtered_activities()
+      valueBox(
+        value = nrow(filtered_activities),
+        subtitle = '# Activities',
+        icon=icon('calendar')
+      )
+    })
+    
+    output$total_distance <- renderValueBox({
+      filtered_activities <- get_filtered_activities()
+      valueBox(
+        value = format_number(sum(filtered_activities$distance),2,',','',' km'),
+        subtitle = 'Distance',
+        color = 'green',
+        icon=icon('road',lib='glyphicon')
+      )
+    })
+    
+    output$total_time <- renderValueBox({
+      filtered_activities <- get_filtered_activities()
+      valueBox(
+        value = as.period(seconds_to_period(sum(filtered_activities$moving_time)),'hours'),
+        subtitle = 'Time',
+        icon=icon('time',lib='glyphicon')
+      )
+    })
+    
+    output$total_ascent <- renderValueBox({
+      filtered_activities <- get_filtered_activities()
+      valueBox(
+        value = format_number(
+          sum(filtered_activities$total_elevation_gain),
+          0,
+          big.mark = ',',
+          '',
+          ' m'
+        ),
+        subtitle = 'Ascent',
+        icon=icon('signal',lib='glyphicon')
+      )
+    })
   }
 )
