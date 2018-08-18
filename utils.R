@@ -11,8 +11,27 @@ post_authorisation_code <- function(authorisation_code) {
   return(content(response))
 }
 
-# tidy compiled activities
+get_activity_list_by_page <- function(stoken,per_page=200,pages=1) {
+  get_pages(url_ = url_activities(),
+            stoken=stoken,
+            per_page=200,
+            page_max=1
+  )
+}
+
+#' Tidy activity list into a nested tibble
+#'
+#' @param .data a list
+#'
+#' @return a tibble
+#' @export
+#'
 tidy_activities <- function(.data) {
+  
+  # compile list into data frame
+  .data <- .data %>% 
+    compile_activities() %>% 
+    as.tibble
   
   # cast dates
   date_cols <- str_subset(colnames(.data),'date')
@@ -24,8 +43,30 @@ tidy_activities <- function(.data) {
   .data <- .data %>% 
     mutate(start_date_string=strftime(start_date,'%Y-%m-%d'))
   
+  # create title: date + name combination
   .data <- .data %>% 
     mutate(title = paste(start_date_string,' - ',name,sep=''))
+  
+  # calculate route coordinates from polyline
+  .data <- .data %>% 
+    mutate(route = map.summary_polyline %>% 
+             map(function(polyline) {
+               if (!is.na(polyline)) {
+                 polyline %>%  decode_Polyline() %>% 
+                   separate(latlon,into=c('lat','lon'),sep = ',') %>% 
+                   # cast to numeric
+                   mutate(lat=as.numeric(lat)) %>% 
+                   mutate(lon=as.numeric(lon))
+               } else {
+                 NA
+               }
+             })
+    )
+  
+  # replace start coordinates with higher precision coords from decoded polyline
+  .data <- .data %>% 
+    mutate(start_latitude=route %>% map('lat') %>% map(1) %>% map_dbl(~ ifelse(is.null(.x),NA,.x) )) %>% 
+    mutate(start_longitude=route %>% map('lon') %>% map(1) %>% map_dbl(~ ifelse(is.null(.x),NA,.x) ))
   
   return(.data)
 }
@@ -82,44 +123,59 @@ get_leaflet_heat_map <- function(
   urlTemplate = "http://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png",
   opacity = 0.01,
   weight = 3,
-  colour = 'blue'
+  colour = 'blue',
+  markers=F
 ) {
+  # extract non NA routes
   routes <- data %>% 
-    select(id,map.summary_polyline) %>% 
-    split(.$id) %>% 
-    map_df(function(row) {
-      row$map.summary_polyline[1] %>% 
-        decode_Polyline() %>% 
-        separate(latlon,into=c('lat','lon'),sep = ',') %>% 
-        # add id
-        mutate(id=row$id) %>% 
-        # cast to numeric
-        mutate(lat=as.numeric(lat)) %>% 
-        mutate(lon=as.numeric(lon)) %>% 
-        select(id,everything())
-    }) %>% 
-    as.tibble
-  
-  routes <- routes %>% 
-    left_join(data %>% select(id,title),by='id') %>% 
-    mutate(label=title)
+    select(id,title,route) %>% 
+    filter(!is.na(route)) %>% 
+    unnest()
   
   routes <- routes %>% split(.$id)
   
   # Plot map
-  
   map <- leaflet() %>% 
     addTiles(urlTemplate = urlTemplate)
   
   for (r in routes) {
     map <- map %>% addPolylines(
       lng = r$lon,
-      lat = r$lat, 
+      lat = r$lat,
       layerId = r$id,
       color=colour,
       opacity = opacity,
       weight = weight
     )
+
+    if (markers) {
+      map <- map %>%
+        addMarkers(
+          lng = r$lon[1],
+          lat = r$lat[1],
+          layerId = r$id[1],
+          popup = r$title
+        )
+    }
+
   }
   map
+}
+
+#' Format a number or number vector
+#'
+#' @param number number
+#' @param decimal_places number of decimal places to round off
+#' @param big.mark big mark
+#' @param prefix a prefix
+#' @param suffix a suffix
+#'
+#' @return formatted string
+#' @export
+#'
+format_number <- function(number,decimal_places=2,big.mark=',',prefix='',suffix='') {
+  number <- round(number*(10^decimal_places),0)/(10^decimal_places)
+  number <- format(number,big.mark=big.mark)
+  number <- glue('{prefix}{number}{suffix}')
+  return(number)
 }

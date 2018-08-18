@@ -2,52 +2,78 @@
 
 library(tidyverse)
 library(rStrava)
+library(httr)
 library(leaflet)
 
+source("./utils.R")
+source("./dplyr_verbs.R")
 
 # 1. Import raw data ----
 
-df <- readRDS('./cache/activities.rds')
+# raw data
+stoken <- readRDS('./cache/stoken.rds')
+# accesstoken <- '056727d371b4ea24d3f458c186d19c857ba6c21b'
+# stoken <- add_headers(Authorization = paste0("Bearer ",accesstoken))
 
-# 2. Process data ----
+# 
+# df_raw <- get_activity_list(stoken,club = T)
+# 
+df_raw <- readRDS('./cache/raw_activities.rds')
 
-# filter to activities with polyline
-df <- df %>% 
+# tidy
+df <- df_raw %>%
+  compile_activities() %>%
+  tidy_activities()
+
+df <- df %>%
+  mutate(week_start=lubridate::floor_date(as.Date(start_date_local)-1,unit = 'week')+1)
+# 
+df %>%
+  filter(start_date_local > '2018-01-01') %>%
+  select(start_date_local,week_start) %>%
+  arrange(start_date_local) %>%
+  tail
+
+df %>% 
+  filter(start_date_local > '2017-07-01') %>% 
+  group_by(week_start) %>% 
+  summarise(dist=sum(distance)) %>% 
+  ggplot(aes(x=week_start,y=dist))+
+  #geom_line()+
+  geom_point()+
+  geom_segment(aes(xend=week_start,yend=0))
+
+df$start_date_local %>% lubridate::floor_date(.,unit = 'week') %>% (. + 1) %>% strftime('%A')
+
+
+# filter values
+date_range_filter <- c('2018-08-01',as.character(Sys.Date()))
+type_filter <- c('Run')
+radius_filter <- 10
+radius_center <- df$title[1]
+
+
+# filter activities
+data <- df %>% 
   filter(!is.na(map.summary_polyline)) %>% 
-  # sample a few
-  head(10)
+  arrange(desc(start_date_local)) %>% 
+  filter(type=='Run') %>% 
+  
+  filter(start_date_local>='2018-08-01')
 
-# convert polyline to coords
+lon=data$start_longitude[1]
+lat=data$start_latitude[1]
+radius=5000
 
-routes <- df %>% 
-  select(id,map.summary_polyline) %>% 
-  split(.$id) %>% 
-  map(function(row) {
-    row$map.summary_polyline[1] %>% 
-      decode_Polyline() %>% 
-      separate(latlon,into=c('lat','lon'),sep = ',') %>% 
-      # add id
-      mutate(id=row$id) %>% 
-      # cast to numeric
-      mutate(lat=as.numeric(lat)) %>% 
-      mutate(lon=as.numeric(lon)) %>% 
-      select(id,everything())
-  })
-
-
-# 3. Plot map ----
-
-map <- leaflet() %>% 
-  addTiles()
-
-for (r in routes) {
-  map <- map %>% addPolylines(
-    lng = r$lon,
-    lat = r$lat, 
-    layerId = r$id,
-    color='red',
-    opacity = 0.1,
-    weight = 1
+data %>% 
+  filter_within_radius(
+    lon=.$start_longitude[1],
+    lat=.$start_latitude[1],
+    radius=5000
+  ) %>%
+  get_leaflet_heat_map(
+    colour='red',
+    weight = 3,
+    opacity=0.01
   )
-}
-map
+  

@@ -1,11 +1,12 @@
 # global.R is sourced when the application is lauched
 message('global.R sourced')
 
-# dependencies
+# Load package dependencies ----
 library(shiny)
 library(rStrava)
 library(tidyverse)
 library(httr)
+library(lubridate)
 library(jsonlite)
 library(glue)
 library(DT)
@@ -13,7 +14,12 @@ library(leaflet)
 library(shinydashboard)
 library(shinythemes)
 
-# Application options ----
+# Load file dependencies ----
+
+source('./utils.R')
+source("./dplyr_verbs.R")
+
+# Set application options ----
 
 # application url
 strava_app_url  <-  glue('http://127.0.0.1:1234')
@@ -24,10 +30,10 @@ Sys.setenv(
 )
 
 # show application api inputs
-ask_api_credentials <- F
+ask_api_credentials <- T
 
-# whether to load cached data (must have authenticated before)
-cache <- T
+# load cached data (must have authenticated before)
+cache <- F
 
 # Load credentials if available ----
 
@@ -39,11 +45,14 @@ cache <- T
 #   strava_app_secret = 'xxxx'
 # )
 
-try({
-  source('./credentials.R')
-})
+if (file.exists('./credentials.R')) source('./credentials.R')
 
-# file dependencies ----
 
-source('./utils.R')
-source("./dplyr_verbs.R")
+periods <- list(
+  'This week' = c(floor_date(Sys.Date()-1,unit = 'week')+1,as.Date(strftime(Sys.Date(),'%Y-%m-%d'))),
+  'Last 7 days' = c(Sys.Date()-6,Sys.Date()),
+  'This month' = c(floor_date(Sys.Date(),unit = 'month'),as.Date(strftime(Sys.Date(),'%Y-%m-%d'))),
+  'This year' = c(floor_date(Sys.Date(),unit = 'year'),Sys.Date()),
+  'Last week' = c(floor_date(Sys.Date()-1-7,unit = 'week')+1,floor_date(Sys.Date()-1,unit = 'week')),
+  'Last month' = c(floor_date(Sys.Date(),unit = 'month') - months(1),floor_date(Sys.Date(),'month')-1)
+)
