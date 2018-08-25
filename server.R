@@ -11,6 +11,7 @@ shinyServer(
       
     } else {
       # cache
+      loginfo('Load cached stoken, token data and activities',logging='authentication')
       app_parameters <- reactiveValues(
         stoken=readRDS('./cache/stoken.rds'),
         token_data=readRDS('./cache/token_data.rds'),
@@ -41,11 +42,9 @@ shinyServer(
           shiny::need(!is.null(authorisation_code),message = 'You need to authenticate')  
         )
         
-        # post code to get token data
-        message('Using client id: ',Sys.getenv('strava_app_client_id'))
-        message('Using secret: ',Sys.getenv('strava_app_secret'))
-        message('Using authorisation code: ',authorisation_code)
+        validate_credentials(authorisation_code)
         
+        # post code to get token data
         token_data <- post_authorisation_code(
           authorisation_code = authorisation_code,
           strava_app_client_id = Sys.getenv('strava_app_client_id'),
@@ -54,7 +53,11 @@ shinyServer(
           
         
         # check access token is available
-        if ('access_token' %in% names(token_data)) message('SUCCESSFULLY AUTHENTICATED')
+        if ('access_token' %in% names(token_data)) {
+          loginfo(glue('Using access token: {token_data$access_token} '),logger='authentication')
+        } else {
+          logerror_stop('Authorisation error',logger='authentication')
+        }
         
         
         accesstoken <- token_data$access_token
@@ -201,12 +204,16 @@ shinyServer(
       if (is.null(app_parameters$activities)) {
         stoken <- app_parameters$stoken
         
-        message('Downloading activities...')
-        my_acts <- get_activity_list(stoken)
+        loginfo('Downloading activities...',logger='api')
+        my_acts <- get_activity_list_by_page(stoken,100,1)
+        
+        loginfo(glue('Downloaded {length(my_acts)} activities'),logger='api')
         
         # process
+        loginfo('Tidying activities',logger='api')
         my_acts.df <- my_acts %>% 
           tidy_activities()
+        loginfo('Tidy complete',logger='api')
         
         
         app_parameters$activities <- my_acts.df
@@ -222,7 +229,6 @@ shinyServer(
     # Initialise UI ----
     # update form controls
     observeEvent(app_parameters$activities,{
-      message('Initialise UI')
       
       activities <- app_parameters$activities
       
@@ -262,7 +268,7 @@ shinyServer(
     # observe period ----
     observeEvent(input$selected_period,{
       period <- input$selected_period
-      cat(period)
+      
       
       dates <- periods[[period]]
       
@@ -288,7 +294,7 @@ shinyServer(
         input$selected_radius
       )
       
-      message('Filter activities')
+      loginfo('Filter activities',logger='activities')
       
       # all activities
       activities <- app_parameters$activities

@@ -1,3 +1,21 @@
+logerror_stop <- function(msg,logger) {
+  logerror(msg,logger=logger)
+  stop(msg)
+}
+
+validate_credentials <- function(authorisation_code) {
+  if (nchar(Sys.getenv('strava_app_client_id')) == 0) logerror_stop('strava_app_client_id is blank',logger='authentication')
+  if (nchar(Sys.getenv('strava_app_secret')) == 0) logerror_stop('strava_app_secret is blank',logger='authentication')
+  
+  loginfo(glue('Using client id: {Sys.getenv(\'strava_app_client_id\')}'),
+          logger = 'authentication')
+  loginfo(glue('Using secret: {Sys.getenv(\'strava_app_secret\')}'),
+          logger =
+            'authentication')
+  loginfo(glue('Using auth code: {authorisation_code}'),
+          logger = 'authentication')
+}
+
 post_authorisation_code <- function(
   authorisation_code,
   strava_app_client_id,
@@ -59,6 +77,10 @@ tidy_activities <- function(.data) {
                }
              })
     )
+  
+  # make numeric
+  .data <- .data %>% 
+    mutate_at(vars(average_heartrate),as.numeric)
   
   # replace start coordinates with higher precision coords from decoded polyline
   .data <- .data %>% 
@@ -158,4 +180,13 @@ get_leaflet_heat_map <- function(
   }
   map
 }
+
+get_activity_list_by_page <- function(stoken,per_page=200,pages=1) {
+  get_pages(url_ = url_activities(),
+            stoken=stoken,
+            per_page=per_page,
+            page_max=pages
+  )
+}
+
 
