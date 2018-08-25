@@ -12,4 +12,8 @@ packrat/lib*/
 packrat/src/*
 .httr-oauth
 
+# credentials.R file
 credentials.R
+
+# logs
+*.log
