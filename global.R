@@ -13,6 +13,7 @@ library(leaflet)
 library(shinydashboard)
 library(shinythemes)
 library(logging)
+library(googlePolylines)
 
 # initialise logging ----
 basicConfig()

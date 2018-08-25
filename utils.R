@@ -67,11 +67,12 @@ tidy_activities <- function(.data) {
     mutate(route = map.summary_polyline %>% 
              map(function(polyline) {
                if (!is.na(polyline)) {
-                 polyline %>%  decode_Polyline() %>% 
-                   separate(latlon,into=c('lat','lon'),sep = ',') %>% 
-                   # cast to numeric
-                   mutate(lat=as.numeric(lat)) %>% 
-                   mutate(lon=as.numeric(lon))
+                 # polyline %>%  decode_Polyline() %>% 
+                 #   separate(latlon,into=c('lat','lon'),sep = ',') %>% 
+                 #   # cast to numeric
+                 #   mutate(lat=as.numeric(lat)) %>% 
+                 #   mutate(lon=as.numeric(lon))
+                 polyline %>% decode %>% as.data.frame
                } else {
                  NA
                }
