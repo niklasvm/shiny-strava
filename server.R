@@ -205,8 +205,8 @@ shinyServer(
         stoken <- app_parameters$stoken
         
         loginfo('Downloading activities...',logger='api')
-        #my_acts <- get_activity_list_by_page(stoken,200,1)
-        my_acts <- get_activity_list(stoken)
+        my_acts <- get_activity_list_by_page(stoken,200,1)
+        #my_acts <- get_activity_list(stoken)
         
         loginfo(glue('Downloaded {length(my_acts)} activities'),logger='api')
         
