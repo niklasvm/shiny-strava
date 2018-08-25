@@ -18,6 +18,7 @@ library(logging)
 basicConfig()
 dir.create('./logs/',showWarnings = F)
 addHandler(writeToFile,file=glue('./logs/{strftime(Sys.time(),\'%Y%m%d-%H%M%S\')}.log'))
+addHandler(writeToConsole)
 
 # Load credentials if available ----
 
