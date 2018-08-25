@@ -63,13 +63,17 @@ ui_authentication_panel <- conditionalPanel(
 )
 
 ui_activity_filters <- div(
-  shiny::radioButtons('selected_period',
-                      label='Period',
-                      choices = names(periods),
-                      selected = 'This week'),
-  
-  dateRangeInput(inputId = 'selected_dates',
-                 label = 'Select date range'
+  shiny::selectInput('selected_period',
+                     label='Period',
+                     choices = names(periods),
+                     selected = 'This week',
+                     multiple = F
+  ),
+  conditionalPanel(
+    condition="input.selected_period == 'Custom'",
+    dateRangeInput(inputId = 'selected_dates',
+                   label = 'Select date range'
+    )
   ),
   checkboxGroupInput(
     inputId = 'selected_types',
