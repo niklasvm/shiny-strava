@@ -46,11 +46,13 @@ if (Sys.getenv('strava_app_client_id')=='' & Sys.getenv('strava_app_secret') == 
 }
 
 # capture application url if not already set
-if (Sys.getenv('strava_app_url') =='') {
+if (Sys.getenv('strava_app_url') == '') {
   strava_app_url  <-  glue('http://127.0.0.1:1234')
   Sys.setenv(strava_app_url = strava_app_url) # set as environment variable
+} else {
+  strava_app_url  <-  Sys.getenv('strava_app_url')
 }
-loginfo(glue('Set strava app url to {strava_app_url}'),logger = 'authentication')
+loginfo(glue('Set strava app url to {strava_app_url}'), logger = 'authentication')
 
 cache <- F # whether to load cached data (must have authenticated before)
 
