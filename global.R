@@ -34,11 +34,6 @@ if (file.exists('./credentials.R')) source('./credentials.R')
 
 # Application options ----
 
-# application url (where the user is redirected after authentication)
-strava_app_url  <-  glue('http://127.0.0.1:1234')
-loginfo(glue('Set strava app url to {strava_app_url}'),logger = 'authentication')
-Sys.setenv(strava_app_url = strava_app_url) # set as environment variable
-
 # check if api credentials need to be captured from the user
 if (Sys.getenv('strava_app_client_id')=='' & Sys.getenv('strava_app_secret') == '') {
   
@@ -49,6 +44,13 @@ if (Sys.getenv('strava_app_client_id')=='' & Sys.getenv('strava_app_secret') == 
   loginfo('Credentials loaded',logger = 'authentication')
   ask_api_credentials <- F
 }
+
+# capture application url if not already set
+if (Sys.getenv('strava_app_url') =='') {
+  strava_app_url  <-  glue('http://127.0.0.1:1234')
+  Sys.setenv(strava_app_url = strava_app_url) # set as environment variable
+}
+loginfo(glue('Set strava app url to {strava_app_url}'),logger = 'authentication')
 
 cache <- F # whether to load cached data (must have authenticated before)
 
