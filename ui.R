@@ -1,65 +1,65 @@
-ui_authentication_panel <- conditionalPanel(
-  condition='output.not_authenticated',
+config_panel <- shinyjs::hidden(
   
-  # if ask_api_credentials is true, show authentication panel containing 4 columns
-  if (ask_api_credentials) {
-    fluidRow(
-      box(
-        width=12,
-        status = 'primary',
-        title = 'Authenticate',
-        solidHeader = T,
-        div(
-          fluidRow(
-            column(3,
-                   textInput(
-                     'input_strava_app_client_id',
-                     "Client ID",
-                     value = Sys.getenv('strava_app_client_id')
-                   )
-            ),
-            column(
-              3,
-              textInput(
-                'input_strava_app_secret',
-                "Client Secret",
-                value = Sys.getenv('strava_app_secret')
-              )
-            ),
-            column(
-              3,
-              textInput(
-                'input_strava_app_url',
-                "Application URL",
-                value = Sys.getenv('strava_app_url')
-              )
-            ),
-            column(3,
-                   uiOutput('auth_submit_button')
-            ),
-            br()
-          )
+  
+  fluidRow(
+    id='config_panel',
+    box(
+      width=12,
+      status = 'primary',
+      title = 'Set application Configuration',
+      solidHeader = T,
+      div(
+        fluidRow(
+          column(3,
+                 textInput(
+                   'input_strava_app_client_id',
+                   "Client ID",
+                   value = Sys.getenv('strava_app_client_id')
+                 )
+          ),
+          column(
+            3,
+            textInput(
+              'input_strava_app_secret',
+              "Client Secret",
+              value = Sys.getenv('strava_app_secret')
+            )
+          ),
+          column(
+            3,
+            textInput(
+              'input_strava_app_url',
+              "Application URL",
+              value = Sys.getenv('strava_app_url')
+            )
+          ),
+          column(
+            3,
+            actionButton('input_save_config','Save')
+            #uiOutput('auth_submit_button')
+          ),
+          br()
         )
       )
     )
-    
-  } else {
-    fluidRow(
-      box(
-        width=12,
-        status = 'primary',
-        title = 'Authenticate',
-        solidHeader = T,
-        div(
-          uiOutput('auth_submit_button')
-          
-        )
+  )
+)
+
+loggin_panel <- shinyjs::hidden(
+  
+  fluidRow(
+    id='loggin_panel',
+    box(
+      width=12,
+      status = 'primary',
+      title = 'Click to login with Strava',
+      solidHeader = T,
+      div(
+        uiOutput('auth_submit_button')
+        
       )
     )
-  }
-  
-  
-  
+  )
 )
 
 ui_activity_filters <- div(
@@ -95,16 +95,8 @@ ui_footer <- fluidRow(
 
 ui_map <- leafletOutput('leaflet_plot')
 
-# ui_rolling_chart <- fluidRow(
-#   box(
-#     width=12,
-#     
-#   )
-# )
-
 shinyUI(
   dashboardPage(
-
     # HEADER ----
     dashboardHeader(
       title = 'shiny-strava',
@@ -117,10 +109,11 @@ shinyUI(
       width = 350
     ),
     
-  
+    
     dashboardBody(
-      ui_authentication_panel,
-      
+      useShinyjs(),
+      config_panel,
+      loggin_panel,
       tabBox(
         width = 12,
         tabPanel(
@@ -130,7 +123,7 @@ shinyUI(
         # tabPanel(
         #   'Chart',
         #   ui_rolling_chart
-        # )
+        # ) 
       ),
       
       ui_footer

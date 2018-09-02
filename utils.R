@@ -1,3 +1,44 @@
+
+parse_authorisation_code <- function(session) {
+  pars <- parseQueryString(session$clientData$url_search)
+  return(pars$code)
+}
+
+load_application_config <- function() {
+  
+  filename <- 'config.yml'
+  
+  if (!file.exists(filename)) stop('No config.yml file found')
+  
+  # read credentials
+  config <- yaml::read_yaml(filename)
+  
+  # load as environment variables
+  config %>% 
+    walk2(
+      names(config),
+      function(value,key) {
+        value <- list(value)
+        names(value) <- key
+        do.call(Sys.setenv, value)
+      }
+    )
+  
+}
+
+parse_application_url <- function(session) {
+  paste0(session$clientData$url_protocol,
+                    "//",
+                    session$clientData$url_hostname, 
+                    ifelse(
+                      session$clientData$url_hostname == "127.0.0.1", 
+                      ":",
+                      session$clientData$url_pathname
+                    ),
+                    session$clientData$url_port
+  )
+}
+
 logerror_stop <- function(msg,logger) {
   logerror(msg,logger=logger)
   stop(msg)

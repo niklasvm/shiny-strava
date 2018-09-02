@@ -1,211 +1,68 @@
 shinyServer(
   function(input, output,session) {
     
-    # MANAGE CACHE ----
-    if (!cache) {
-      # app_parameters is a list that holds authentication data and activity list
-      app_parameters <- reactiveValues(
-        authenticated=F,
-        credentials=list()
-      )
+    # initialise app parameters
+    app_parameters <- reactiveValues()
+    
+    # APPLICATION STARTUP AND STATUS ----
+    observe({
       
-    } else {
-      # cache
-      loginfo('Load cached stoken, token data and activities',logging='authentication')
-      app_parameters <- reactiveValues(
-        stoken=readRDS('./cache/stoken.rds'),
-        token_data=readRDS('./cache/token_data.rds'),
-        activities=readRDS('./cache/activities.rds'),
-        authenticated=T
-      ) 
-    }
-
-    # AUTHENTICATION AND DATA DOWNLOAD ----
-    
-    # get authentication state for conditional panel
-    output$not_authenticated <- reactive({
-      !app_parameters$authenticated
-    })
-    outputOptions(output,'not_authenticated', suspendWhenHidden = FALSE)
-    
-    # get_stoken ----
-    # Get stoken using client id and secret
-    get_stoken <- reactive({
-      if (is.null(app_parameters$stoken)) {
+      # 1. Manage Cache ----
+      if (cache) {
+        app_parameters$logged_in <- T
+        app_parameters$config_loaded <- T
+        app_parameters$stoken=readRDS('./cache/stoken.rds')
+        app_parameters$token_data=readRDS('./cache/token_data.rds')
+        app_parameters$activities=readRDS('./cache/activities.rds')
+        return()
+      }
+      
+      # 2. Load config ----
+      app_parameters$config_loaded <- 
+        tryCatch({
+          load_application_config()
+          loginfo('config.yml loaded',logger = 'config')
+          T
+        },error=function(e) {
+          loginfo('No config.yml file found',logger = 'config')
+          return(F)
+        })
+      
+      # 3. Authorisation and API calls ----
+      authorisation_code <- parse_authorisation_code(session)
+      
+      # check if authorisation code is empty
+      if (is.null(authorisation_code)) {
+        app_parameters$logged_in <- F
+      } else {
         
-        # parse authorisation code from url string
-        authorisation_code <- get_authorisation_code()
+        app_parameters$logged_in <- T
         app_parameters$authorisation_code <- authorisation_code
         
-        # validate authorisation code is not NULL
-        shiny::validate(
-          shiny::need(!is.null(authorisation_code),message = 'You need to authenticate')  
-        )
-        
+        # check credentials 
         validate_credentials(authorisation_code)
         
-        # post code to get token data
-        token_data <- post_authorisation_code(
+        # 3.1 Get stoken ----
+        app_parameters$token_data <- post_authorisation_code(
           authorisation_code = authorisation_code,
           strava_app_client_id = Sys.getenv('strava_app_client_id'),
           strava_app_secret = Sys.getenv('strava_app_secret')
         )
-          
         
-        # check access token is available
-        if ('access_token' %in% names(token_data)) {
-          loginfo(glue('Using access token: {token_data$access_token} '),logger='authentication')
+        # verify access_token is available
+        if ('access_token' %in% names(app_parameters$token_data)) {
+          loginfo(glue('Using access token: {app_parameters$token_data$access_token} '),logger='authentication')
         } else {
           logerror_stop('Authorisation error',logger='authentication')
         }
+        app_parameters$stoken <- add_headers(Authorization = paste0("Bearer ",app_parameters$token_data$access_token))
         
+        saveRDS(app_parameters$token_data,'./cache/token_data.rds')
+        saveRDS(app_parameters$stoken,'./cache/stoken.rds')
         
-        accesstoken <- token_data$access_token
-        stoken <- add_headers(Authorization = paste0("Bearer ",accesstoken))
-        
-        # set app parameters
-        app_parameters$token_data <- token_data
-        app_parameters$stoken <- stoken
-        app_parameters$authenticated <- T
-        
-        # cache
-        dir.create('cache',showWarnings = F)
-        saveRDS(token_data,'./cache/token_data.rds')
-        saveRDS(stoken,'./cache/stoken.rds')
-        
-      } else {
-        stoken <- app_parameters$stoken
-      }
-      
-      return(stoken)
-    })
-    
-    # capture credentials from form -----
-    observeEvent(c(input$input_strava_app_url,input$input_strava_app_client_id,input$input_strava_app_secret),{
-      
-      # load into app_parameters to dynamically update url in link
-      app_parameters$credentials <- list(
-        strava_app_url = input$input_strava_app_url,
-        strava_app_client_id  = as.numeric(input$input_strava_app_client_id),
-        strava_app_secret = input$input_strava_app_secret
-      )
-      
-      # Set environment variables
-      Sys.setenv(
-        strava_app_url = input$input_strava_app_url,
-        strava_app_client_id  = as.numeric(input$input_strava_app_client_id),
-        strava_app_secret = input$input_strava_app_secret
-      )
-      
-    })
-    
-    # generate authorisation_url ----
-    authorisation_url <- reactive({
-      # generate authentication link as set out at https://developers.strava.com/docs/authentication/
-      if (ask_api_credentials) {
-        # generate from form
-        authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={app_parameters$credentials$strava_app_client_id}&response_type=code&redirect_uri={app_parameters$credentials$strava_app_url}&approval_prompt=auto&state=')
-      } else {
-        # generate from environment variables
-        authorisation_url <-   glue('https://www.strava.com/oauth/authorize?client_id={Sys.getenv(\'strava_app_client_id\')}&response_type=code&redirect_uri={Sys.getenv(\'strava_app_url\')}&approval_prompt=auto&state=')
-      }
-
-      return(authorisation_url)
-      
-    })
-    
-    # parse authentication code from current url if available
-    # get_authorisation_code ----
-    get_authorisation_code <- reactive({
-      pars <- parseQueryString(session$clientData$url_search)
-      return(pars$code)
-    })
-    
-    # output$authentication_panel ----
-    output$authentication_panel <- renderUI({
-      if (!app_parameters$authenticated) {
-        
-        # if ask_api_credentials is true, show authentication panel containing 4 columns
-        if (ask_api_credentials) {
-          fluidRow(
-            box(
-              width=12,
-              div(
-                fluidRow(
-                  column(3,
-                         textInput(
-                           'input_strava_app_client_id',
-                           "Client ID",
-                           value = Sys.getenv('strava_app_client_id')
-                         )
-                  ),
-                  column(
-                    3,
-                    textInput(
-                      'input_strava_app_secret',
-                      "Client Secret",
-                      value = Sys.getenv('strava_app_secret')
-                    )
-                  ),
-                  column(
-                    3,
-                    textInput(
-                      'input_strava_app_url',
-                      "Application URL",
-                      value = Sys.getenv('strava_app_url')
-                    )
-                  ),
-                  column(3,
-                         uiOutput('auth_submit_button')
-                  ),
-                  br()
-                )
-              )
-            )
-          )
-          
-        } else {
-          fluidRow(
-            box(
-              width=12,
-              div(
-                uiOutput('auth_submit_button')
-                
-              )
-            )
-          )
-        }
-          
-       
-      }
-    })
-    
-    # output$auth_submit_button ----
-    output$auth_submit_button <- renderUI({
-      a(
-        img(src = 'btn_strava_connectwith_light.png'),
-        href = authorisation_url()
-      )
-    })
-
-    # output$welcome_line ----
-    # adds welcome line and triggers authentication to take place
-    output$welcome_line <- renderText({
-      stoken <- get_stoken()
-      token_data <- app_parameters$token_data
-      glue('{token_data$athlete$firstname} {token_data$athlete$lastname}')
-    })
-    
-    # triggers when the app has successfullly authenticated
-    # downloads and tidies activity data set
-    observeEvent(app_parameters$authenticated,{
-      if (!app_parameters$authenticated) return()
-      
-      if (is.null(app_parameters$activities)) {
-        stoken <- app_parameters$stoken
-        
+        # 3.2 Download activity list ----
         loginfo('Downloading activities...',logger='api')
-        my_acts <- get_activity_list_by_page(stoken,200,1)
+        my_acts <- get_activity_list_by_page(app_parameters$stoken,200,1)
         #my_acts <- get_activity_list(stoken)
         
         loginfo(glue('Downloaded {length(my_acts)} activities'),logger='api')
@@ -214,7 +71,7 @@ shinyServer(
         loginfo('Tidying activities',logger='api')
         my_acts.df <- my_acts %>% 
           tidy_activities()
-        loginfo('Tidy complete',logger='api')
+        loginfo('Tidying complete',logger='api')
         
         
         app_parameters$activities <- my_acts.df
@@ -223,8 +80,94 @@ shinyServer(
         saveRDS(my_acts,'./cache/raw_activities.rds')  
         saveRDS(my_acts.df,'./cache/activities.rds')  
         
+        # cache
+        dir.create('cache',showWarnings = F)
       }
       
+      
+      
+      
+      
+      
+      # show config panel
+      if (!app_parameters$config_loaded) {
+        shinyjs::show('config_panel')
+      } else {
+        shinyjs::hide('config_panel')
+      }
+      
+      # show loggin panel
+      if (app_parameters$config_loaded & !app_parameters$logged_in) {
+        shinyjs::show('loggin_panel')
+      } else {
+        shinyjs::hide('loggin_panel')
+      }
+      
+    })
+    
+    # GET STATES ----
+    # 1. get config loaded state ----
+    output$config_loaded <- reactive({
+      value <- app_parameters$config_loaded
+      app_parameters$config_loaded
+    })
+    outputOptions(output,'config_loaded', suspendWhenHidden = FALSE)
+    
+    # 2. get logged in state ----
+    output$logged_in <- reactive({
+      app_parameters$logged_in
+    })
+    outputOptions(output,'logged_in', suspendWhenHidden = FALSE)
+    
+    # CAPTURE APPLICATION URL ----
+    observe({
+      app_url <- parse_application_url(session)
+      loginfo(glue('Captured application url as {app_url}'),logger='config')
+      updateTextInput(session,inputId = 'input_strava_app_url',value = app_url)
+    })
+    
+    #SAVE CONFIG FROM FORM ----
+    observeEvent(input$input_save_config,{
+      # capture application credentials into list
+      credentials <- list(
+        strava_app_url = input$input_strava_app_url,
+        strava_app_client_id  = as.numeric(input$input_strava_app_client_id),
+        strava_app_secret = input$input_strava_app_secret,
+        strava_app_authorisation_url = glue('https://www.strava.com/oauth/authorize?client_id={as.numeric(input$input_strava_app_client_id)}&response_type=code&redirect_uri={input$input_strava_app_url}&approval_prompt=auto&state=')
+      )
+      
+      # write to yaml file
+      yaml::write_yaml(credentials %>% map(as.character),'config.yml')
+      
+      # load into app
+      load_application_config()
+      
+      # change app parameter
+      app_parameters$config_loaded <- T
+    })
+    
+    # AUTHENTICATION AND DATA DOWNLOAD ----
+    
+    # get authentication state for conditional panel
+    output$logged_in <- reactive({
+      app_parameters$logged_in
+    })
+    outputOptions(output,'logged_in', suspendWhenHidden = FALSE)
+    
+    # output$auth_submit_button ----
+    output$auth_submit_button <- renderUI({
+      a(
+        img(src = 'btn_strava_connectwith_light.png'),
+        href = Sys.getenv('strava_app_authorisation_url')
+      )
+    })
+    
+    # output$welcome_line ----
+    # adds welcome line and triggers authentication to take place
+    output$welcome_line <- renderText({
+      stoken <- app_parameters$stoken
+      token_data <- app_parameters$token_data
+      glue('{token_data$athlete$firstname} {token_data$athlete$lastname}')
     })
     
     # Initialise UI ----
@@ -270,8 +213,6 @@ shinyServer(
     observeEvent(input$selected_period,{
       period <- input$selected_period
       
-      if(period=='Custom') return(invisible())
-      
       dates <- periods[[period]]
       
       
@@ -285,8 +226,17 @@ shinyServer(
     
     # get_filtered_activities ----
     get_filtered_activities <- reactive({
-      #get_filtered_activities <- eventReactive(input$submit,{
-      if (!app_parameters$authenticated) return()
+      
+      shiny::validate(
+        shiny::need(app_parameters$config_loaded==T,'Application config doesn\'t exist')
+      )
+      
+      shiny::validate(
+        shiny::need(app_parameters$logged_in==T,'You are not logged in')
+      )
+      
+      #if (!app_parameters$logged_in) return()
+      if (is.null(app_parameters$activities)) return()
       
       # validate inputs are available
       req(
@@ -317,7 +267,13 @@ shinyServer(
           start_date >= date_range_filter[1] & 
             start_date <= date_range_filter[2] + hms('23:59:59')
         ) %>% 
-        filter(type %in% types_filter) %>% 
+        filter(type %in% types_filter)
+      
+      shiny::validate(
+        shiny::need(nrow(filtered_activities) > 0,message = 'No activities selected')  
+      )
+      
+      filtered_activities <- filtered_activities %>% 
         filter_within_radius(
           lon=location_anchor$start_longitude[1],
           lat=location_anchor$start_latitude[1],
@@ -331,10 +287,6 @@ shinyServer(
     output$leaflet_plot <- renderLeaflet({
       
       filtered_activities <- get_filtered_activities()
-      
-      shiny::validate(
-        shiny::need(nrow(filtered_activities) > 0,message = 'No activities selected')  
-      )
       
       filtered_activities %>% 
         get_leaflet_heat_map(

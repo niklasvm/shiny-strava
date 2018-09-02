@@ -14,6 +14,7 @@ packrat/src/*
 
 # credentials.R file
 credentials.R
+config*.yml
 
 # logs
 *.log
