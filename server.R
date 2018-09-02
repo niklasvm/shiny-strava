@@ -4,7 +4,7 @@ shinyServer(
     # initialise app parameters
     app_parameters <- reactiveValues()
     
-    # APPLICATION STARTUP AND STATUS ----
+    # APPLICATION STARTUP, STATUS AND UI ----
     observe({
       
       # 1. Manage Cache ----
@@ -119,14 +119,14 @@ shinyServer(
     })
     outputOptions(output,'logged_in', suspendWhenHidden = FALSE)
     
-    # CAPTURE APPLICATION URL ----
+    # DYNAMICALLY CAPTURE APPLICATION URL ----
     observe({
       app_url <- parse_application_url(session)
       loginfo(glue('Captured application url as {app_url}'),logger='config')
       updateTextInput(session,inputId = 'input_strava_app_url',value = app_url)
     })
     
-    #SAVE CONFIG FROM FORM ----
+    # SAVE CONFIG FROM FORM ----
     observeEvent(input$input_save_config,{
       # capture application credentials into list
       credentials <- list(
@@ -145,14 +145,6 @@ shinyServer(
       # change app parameter
       app_parameters$config_loaded <- T
     })
-    
-    # AUTHENTICATION AND DATA DOWNLOAD ----
-    
-    # get authentication state for conditional panel
-    output$logged_in <- reactive({
-      app_parameters$logged_in
-    })
-    outputOptions(output,'logged_in', suspendWhenHidden = FALSE)
     
     # output$auth_submit_button ----
     output$auth_submit_button <- renderUI({
@@ -223,6 +215,9 @@ shinyServer(
       
       
     })
+    
+    #.---------------------- -----
+    # ANALYTICS ----
     
     # get_filtered_activities ----
     get_filtered_activities <- reactive({
