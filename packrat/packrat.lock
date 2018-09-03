@@ -260,10 +260,10 @@ Requires: RgoogleMaps, digest, geosphere, ggplot2, jpeg, mapproj, plyr,
 
 Package: ggplot2
 Source: CRAN
-Version: 2.2.1
-Hash: 46e5cb78836848aa44655e577433f54b
-Requires: MASS, digest, gtable, lazyeval, plyr, reshape2, scales,
-    tibble
+Version: 3.0.0
+Hash: 8332448b76ff31472a1bf6dd31fcddb1
+Requires: MASS, digest, gtable, lazyeval, plyr, reshape2, rlang,
+    scales, tibble, viridisLite, withr
 
 Package: ggrepel
 Source: CRAN
