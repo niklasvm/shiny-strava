@@ -15,6 +15,7 @@ library(shinydashboard)
 library(shinythemes)
 library(logging)
 library(googlePolylines)
+library(shinyjs)
 
 # initialise logging ----
 basicConfig()
