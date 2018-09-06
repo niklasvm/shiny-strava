@@ -36,45 +36,62 @@ shinyServer(
         app_parameters$logged_in <- F
       } else {
         
-        app_parameters$logged_in <- T
-        app_parameters$authorisation_code <- authorisation_code
-        
-        # check credentials 
-        validate_credentials(authorisation_code)
-        
-        # 3.1 Get stoken ----
-        app_parameters$token_data <- post_authorisation_code(
-          authorisation_code = authorisation_code,
-          strava_app_client_id = Sys.getenv('strava_app_client_id'),
-          strava_app_secret = Sys.getenv('strava_app_secret')
+        withProgress({
+          
+          app_parameters$logged_in <- T
+          app_parameters$authorisation_code <- authorisation_code
+          
+          shiny::setProgress(value=0,message = 'Logging in...')
+          
+          # check credentials 
+          validate_credentials(authorisation_code)
+          
+          # 3.1 Get stoken ----
+          app_parameters$token_data <- post_authorisation_code(
+            authorisation_code = authorisation_code,
+            strava_app_client_id = Sys.getenv('strava_app_client_id'),
+            strava_app_secret = Sys.getenv('strava_app_secret')
+          )
+          
+          # verify access_token is available
+          if ('access_token' %in% names(app_parameters$token_data)) {
+            loginfo(glue('Using access token: {app_parameters$token_data$access_token} '),logger='authentication')
+          } else {
+            logerror_stop('Authorisation error',logger='authentication')
+          }
+          shiny::setProgress(value=0.05,message = 'Logged in')
+          app_parameters$stoken <- add_headers(Authorization = paste0("Bearer ",app_parameters$token_data$access_token))
+          
+          saveRDS(app_parameters$token_data,'./cache/token_data.rds')
+          saveRDS(app_parameters$stoken,'./cache/stoken.rds')
+          
+          # 3.2 Download activity list ----
+          
+          shiny::setProgress(value=0.2,message = 'Connecting to strava')
+          
+          loginfo('Downloading activities...',logger='api')
+          shiny::setProgress(value=0.25,message = 'Downloading activity list')
+          my_acts <- get_activity_list_by_page(app_parameters$stoken,200,1)
+          #my_acts <- get_activity_list(stoken)
+          
+          shiny::setProgress(value=0.6,message = 'Transforming data')
+          
+          loginfo(glue('Downloaded {length(my_acts)} activities'),logger='api')
+          
+          # process
+          loginfo('Tidying activities',logger='api')
+          my_acts.df <- my_acts %>% 
+            tidy_activities()
+          loginfo('Tidying complete',logger='api')
+          
+          
+          app_parameters$activities <- my_acts.df
+          
+          shiny::setProgress(value=1,message = 'Complete')
+        },
+        min = 0,
+        max = 1
         )
-        
-        # verify access_token is available
-        if ('access_token' %in% names(app_parameters$token_data)) {
-          loginfo(glue('Using access token: {app_parameters$token_data$access_token} '),logger='authentication')
-        } else {
-          logerror_stop('Authorisation error',logger='authentication')
-        }
-        app_parameters$stoken <- add_headers(Authorization = paste0("Bearer ",app_parameters$token_data$access_token))
-        
-        saveRDS(app_parameters$token_data,'./cache/token_data.rds')
-        saveRDS(app_parameters$stoken,'./cache/stoken.rds')
-        
-        # 3.2 Download activity list ----
-        loginfo('Downloading activities...',logger='api')
-        my_acts <- get_activity_list_by_page(app_parameters$stoken,200,1)
-        #my_acts <- get_activity_list(stoken)
-        
-        loginfo(glue('Downloaded {length(my_acts)} activities'),logger='api')
-        
-        # process
-        loginfo('Tidying activities',logger='api')
-        my_acts.df <- my_acts %>% 
-          tidy_activities()
-        loginfo('Tidying complete',logger='api')
-        
-        
-        app_parameters$activities <- my_acts.df
         
         # save to global parameters
         saveRDS(my_acts,'./cache/raw_activities.rds')  
