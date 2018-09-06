@@ -1,4 +1,3 @@
-
 parse_authorisation_code <- function(session) {
   pars <- parseQueryString(session$clientData$url_search)
   return(pars$code)
@@ -98,6 +97,11 @@ tidy_activities <- function(.data) {
   # create date strings
   .data <- .data %>% 
     mutate(start_date_string=strftime(start_date,'%Y-%m-%d'))
+  
+  # add week and month ends
+  .data <- .data %>% 
+    mutate(week_end=as.Date(ceiling_date(start_date,'week',week_start = 1))) %>% 
+    mutate(month_end=as.Date(ceiling_date(start_date,'month')-1))
   
   # create title: date + name combination
   .data <- .data %>% 
