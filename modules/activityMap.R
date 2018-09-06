@@ -4,10 +4,10 @@ activityMapUI <- function(id) {
   fluidPage(
     fluidRow(
       column(
-        6,shiny::selectInput(ns('selected_anchor'),label='Location anchor',multiple=F,choices=c(''),width = '50%')
+        6,shiny::selectInput(ns('selected_anchor'),label='Location anchor',multiple=F,choices=c(''),width = '100%')
       ),
       column(
-        6,shiny::numericInput(ns('selected_radius'),'Radius (m)',min=0,max=Inf,step=1000,value=100000,width = '50%')
+        6,shiny::numericInput(ns('selected_radius'),'Radius (m)',min=0,max=Inf,step=1000,value=100000,width = '100%')
       )
     ),
     fluidRow(
@@ -30,7 +30,7 @@ activityMap <- function(input,output,session,activities) {
     )
   })
   
-  output$leaflet_plot <- renderLeaflet({
+  filtered_activities <- reactive({
     # reference activities input
     activities <- activities()
     
@@ -49,8 +49,13 @@ activityMap <- function(input,output,session,activities) {
         radius=radius_filter
       )
     
+    return(activities)
+  })
+  
+  output$leaflet_plot <- renderLeaflet({
+    
     # plot
-    activities %>% 
+    filtered_activities() %>% 
       get_leaflet_heat_map(
         colour='red',
         weight = 2,

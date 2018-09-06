@@ -97,14 +97,14 @@ shinyUI(
       
     # HEADER ----
     dashboardHeader(
-      title = 'shiny-strava',
-      titleWidth = 350
+      title = 'shiny-strava'
+      #titleWidth = 350
     ),
     
     # SIDEBAR ----
     dashboardSidebar(
-      ui_activity_filters,
-      width = 350
+      ui_activity_filters
+      #width = 350
     ),
     
     
@@ -114,6 +114,10 @@ shinyUI(
       loggin_panel,
       tabBox(
         width = 12,
+        tabPanel(
+          'Chart',
+          summaryDataUI('summary_data')
+        ),
         tabPanel(
           'Map',
           activityMapUI('map')

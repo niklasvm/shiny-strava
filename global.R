@@ -16,6 +16,7 @@ library(shinythemes)
 library(logging)
 library(googlePolylines)
 library(shinyjs)
+library(tidyquant)
 
 # initialise logging ----
 basicConfig()

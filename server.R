@@ -1,6 +1,10 @@
 shinyServer(
   function(input, output,session) {
     
+    # modules ----
+    callModule(summaryData,"summary_data",activities=get_filtered_activities)
+    callModule(activityMap,"map",activities=get_filtered_activities)
+    
     # initialise app parameters
     app_parameters <- reactiveValues()
     
@@ -269,12 +273,6 @@ shinyServer(
       
       return(filtered_activities)
     })
-    
-
-
-    
-    #callModule(summaryData,"summary_data",activities=get_filtered_activities)
-    callModule(activityMap,"map",activities=get_filtered_activities)
     
   }
 )
