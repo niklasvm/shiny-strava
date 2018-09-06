@@ -125,8 +125,9 @@ tidy_activities <- function(.data) {
     )
   
   # make numeric
-  .data <- .data %>% 
-    mutate_at(vars(average_heartrate),as.numeric)
+  if('average_heartrate' %in% names(.data))
+    .data <- .data %>% 
+      mutate_at(vars(average_heartrate),as.numeric)
   
   # replace start coordinates with higher precision coords from decoded polyline
   .data <- .data %>% 
