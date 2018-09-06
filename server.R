@@ -190,15 +190,6 @@ shinyServer(
         selected = types
       )
       
-      # 3. initialise anchors ----
-      anchors <- activities %>% arrange(desc(start_date)) %>% pull(title)
-      updateSelectInput(
-        session=session,
-        inputId='selected_anchor',
-        choices=anchors,
-        selected=anchors[1]
-      )
-      
     })
     
     # observe period ----
@@ -236,25 +227,16 @@ shinyServer(
       # validate inputs are available
       req(
         input$selected_dates,
-        input$selected_types,
-        input$selected_anchor,
-        input$selected_radius
+        input$selected_types
       )
       
       loginfo('Filter activities',logger='activities')
       
-      # all activities
+      
       activities <- app_parameters$activities
-      
-      # filter out activities without polyline
-      activities <- activities %>% 
-        filter(!is.na(map.summary_polyline))
-      
       
       date_range_filter <- input$selected_dates
       types_filter <- input$selected_types
-      location_anchor <- activities %>% filter(title==input$selected_anchor)
-      radius_filter <- input$selected_radius
       
       
       filtered_activities <- activities %>% 
@@ -268,30 +250,14 @@ shinyServer(
         shiny::need(nrow(filtered_activities) > 0,message = 'No activities selected')  
       )
       
-      filtered_activities <- filtered_activities %>% 
-        filter_within_radius(
-          lon=location_anchor$start_longitude[1],
-          lat=location_anchor$start_latitude[1],
-          radius=radius_filter
-        )
-      
       return(filtered_activities)
     })
     
-    # output$leaflet_plot ----
-    output$leaflet_plot <- renderLeaflet({
-      
-      filtered_activities <- get_filtered_activities()
-      
-      filtered_activities %>% 
-        get_leaflet_heat_map(
-          colour='red',
-          weight = 2,
-          opacity=0.01,
-          markers = T
-        )
-    })
+
+
     
+    #callModule(summaryData,"summary_data",activities=get_filtered_activities)
+    callModule(activityMap,"map",activities=get_filtered_activities)
     
   }
 )

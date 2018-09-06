@@ -66,7 +66,7 @@ ui_activity_filters <- div(
   shiny::selectInput('selected_period',
                      label='Period',
                      choices = names(periods),
-                     selected = 'This week',
+                     selected = 'Last 30 days',
                      multiple = F
   ),
   conditionalPanel(
@@ -78,10 +78,6 @@ ui_activity_filters <- div(
   checkboxGroupInput(
     inputId = 'selected_types',
     label='Select types'
-  ),
-  div(
-    shiny::selectInput('selected_anchor',label='Location anchor',multiple=F,choices=c('')),
-    shiny::numericInput('selected_radius','Radius (m)',min=0,max=Inf,step=1000,value=100000)
   )
 )
 
@@ -93,10 +89,12 @@ ui_footer <- fluidRow(
   )
 )
 
-ui_map <- leafletOutput('leaflet_plot')
+#ui_summary_chart <- plotOutput('summary_chart')
 
 shinyUI(
   dashboardPage(
+    title = 'shiny-strava',
+      
     # HEADER ----
     dashboardHeader(
       title = 'shiny-strava',
@@ -118,12 +116,9 @@ shinyUI(
         width = 12,
         tabPanel(
           'Map',
-          ui_map
+          activityMapUI('map')
         )
-        # tabPanel(
-        #   'Chart',
-        #   ui_rolling_chart
-        # ) 
+        
       ),
       
       ui_footer
