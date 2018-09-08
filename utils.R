@@ -100,10 +100,10 @@ tidy_activities <- function(.data) {
   
   # add week and month ends + week and month starts
   .data <- .data %>% 
-    mutate(week_end=as.Date(ceiling_date(start_date,'week',week_start = 1))) %>% 
-    mutate(month_end=as.Date(ceiling_date(start_date,'month')-1)) %>% 
-    mutate(week_start=as.Date(floor_date(start_date,unit='week',week_start = 1))+1) %>% 
-    mutate(month_start=start_date %>% floor_date(unit = 'month') %>% as.Date())
+    mutate(week_end=as.Date(ceiling_date(start_date %>% as.Date,'week',week_start = 1))) %>% 
+    mutate(month_end=as.Date(ceiling_date(start_date %>% as.Date,'month')-1)) %>% 
+    mutate(week_start=as.Date(floor_date(start_date %>% as.Date,unit='week',week_start = 1))+1) %>% 
+    mutate(month_start=start_date %>% as.Date %>% floor_date(unit = 'month') %>% as.Date())
     
   
   # create title: date + name combination
