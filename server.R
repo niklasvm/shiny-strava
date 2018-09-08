@@ -1,3 +1,7 @@
+# TO DO ----
+# 1. Modularise overall controls ----
+# 2. Layout work ----
+
 shinyServer(
   function(input, output,session) {
     
@@ -189,10 +193,6 @@ shinyServer(
       
       activities <- app_parameters$activities
       
-      # filter out activities without polyline
-      activities <- activities %>% 
-        filter(!is.na(map.summary_polyline))
-      
       # 1. initialise dates ----
       daterange <- range(as.Date(activities$start_date))
       updateDateRangeInput(session=session,
@@ -204,7 +204,7 @@ shinyServer(
       )
       # 2. initialise types ----
       types <- activities$type %>% unique %>% sort
-      updateCheckboxGroupInput(
+      updateSelectInput(
         session = session,
         inputId = 'selected_types',
         choices = types,
@@ -215,14 +215,25 @@ shinyServer(
     
     # observe period ----
     observeEvent(input$selected_period,{
+      
+      
+      #if(is.null(app_parameters$activities)) return()
+      
       period <- input$selected_period
       
       dates <- periods[[period]]
       
       
+      
+      daterange <- range(as.Date(app_parameters$activities$start_date))
+      
+      dates[1] <- max(dates[1],daterange[1])
+      dates[2] <- min(dates[2],daterange[2],Sys.Date())
+      
+      
       updateDateRangeInput(session=session,
                            inputId = 'selected_dates',
-                           start = dates[1],
+                           start = as.Date(dates[1]),
                            end = dates[2])
       
       

@@ -10,6 +10,7 @@ library(jsonlite)
 library(glue)
 library(DT)
 library(leaflet)
+library(highcharter)
 library(shinyjs)
 library(shinydashboard)
 library(shinythemes)
@@ -53,5 +54,6 @@ periods <- list(
   'This year' = c(floor_date(Sys.Date(),unit = 'year'),Sys.Date()),
   'Last week' = c(floor_date(Sys.Date()-1-7,unit = 'week')+1,floor_date(Sys.Date()-1,unit = 'week')),
   'Last month' = c(floor_date(Sys.Date(),unit = 'month') - months(1),floor_date(Sys.Date(),'month')-1),
+  'All time' = c(as.Date('1900-01-01'),as.Date(Sys.Date())),
   'Custom' = c(floor_date(Sys.Date()-1,unit = 'week')+1,as.Date(strftime(Sys.Date(),'%Y-%m-%d')))
 )

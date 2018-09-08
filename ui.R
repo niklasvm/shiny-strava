@@ -75,9 +75,15 @@ ui_activity_filters <- div(
                    label = 'Select date range'
     )
   ),
-  checkboxGroupInput(
+  shiny::selectInput(
     inputId = 'selected_types',
-    label='Select types'
+    label='Select types',
+    choices='',
+    multiple = T
+  ),
+  div(
+    img(src='1.2 strava api logos/powered by Strava/pwrdBy_strava_light/api_logo_pwrdBy_strava_stack_light.png',width=199*.6,height=86*.6),
+    style='display: block;margin-left: auto;margin-right: auto;width: 50%;'
   )
 )
 
@@ -123,9 +129,7 @@ shinyUI(
           activityMapUI('map')
         )
         
-      ),
-      
-      ui_footer
+      )
     )
   )
   
