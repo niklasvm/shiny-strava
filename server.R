@@ -216,8 +216,7 @@ shinyServer(
     # observe period ----
     observeEvent(input$selected_period,{
       
-      
-      #if(is.null(app_parameters$activities)) return()
+      if(is.null(app_parameters$activities)) return()
       
       period <- input$selected_period
       
