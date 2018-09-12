@@ -1,5 +1,22 @@
 # shiny-strava
-A project to showcase Strava data using the R package rStrava and Shiny
+`shiny-strava` is a web application built using `shiny` to display an athlete's workout data in an interactive dashboard. The app uses the `rStrava` R package to connect to Strava's web API to download an athlete's data.
+
+## Layout
+
+shiny-strava uses a traditional shinydashboard layout with header, sidebar and main panel
+
+### Controls
+
+Controls on the sidebar can be used to limit activities by data and type
+
+### Map
+
+A map of activity tracks is displayed using leaflet. Controls are available to limit tracks within a radius of the start of one of the activities
+
+### Chart
+
+An interactive chart allows the user to view weekly or monthly stats.
+
 
 ## Instructions
 
@@ -11,14 +28,3 @@ A project to showcase Strava data using the R package rStrava and Shiny
 1. Click the link **Click to Authorise Strava access**
 1. Once you authenticate you will be redirected to the app and it will start downloading your activities and display them in a data.table.
 
-## To Do
-
-* Organise code structure
-* Change to shiny dashboard
-* Merge into master
-* Activity filter ideas
-  * Date range 
-  * Last x days
-  * Distance
-  
-  * 
