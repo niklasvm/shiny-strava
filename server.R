@@ -173,9 +173,12 @@ shinyServer(
     
     # output$auth_submit_button ----
     output$auth_submit_button <- renderUI({
+      app_url <- parse_application_url(session)
+      url <- glue('https://www.strava.com/oauth/authorize?client_id={Sys.getenv(\'strava_app_client_id\')}&response_type=code&redirect_uri={app_url}&approval_prompt=auto&state=')
+      
       a(
         img(src = 'btn_strava_connectwith_light.png'),
-        href = Sys.getenv('strava_app_authorisation_url')
+        href = url
       )
     })
     
