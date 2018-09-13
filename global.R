@@ -30,7 +30,7 @@ addHandler(writeToFile,file=glue('./logs/{strftime(Sys.time(),\'%Y%m%d-%H%M%S\')
 loginfo('Load file depencencies',logger='authentication')
 source('./utils.R')
 source("./dplyr_verbs.R")
-list.files('./modules/',recursive = T,full.names = T) %>% 
+list.files('./modules/',recursive = T,full.names = T,pattern='\\.R$') %>% 
   walk(source)
 
 # Application options ----
