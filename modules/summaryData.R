@@ -10,13 +10,21 @@ plotSummaryDataHC <- function(data,
                               y_format = '{value}',
                               x_label_rotation = 0) {
   
-  saveRDS(data,'temp.rds')
+  
+  # aggregate data
   data <- data %>% 
     group_by(!!rlang::sym(x)) %>% 
     summarise_at(vars(distance,moving_time),sum) %>% 
     arrange(!!rlang::sym(x))
   
+  # plot with highchart
   highchart() %>% 
+    
+    # chart level options
+    hc_title(text=title) %>% 
+    hc_chart(
+      zoomType=chart_zoom
+    ) %>% 
     
     # column data
     hc_add_series(
@@ -48,13 +56,7 @@ plotSummaryDataHC <- function(data,
       labels=list(
         rotation = x_label_rotation
       )
-    ) %>% 
-    
-    # chart level options
-    hc_title(text=title) %>% 
-    hc_chart(
-      zoomType=chart_zoom
-    )
+    ) 
   
 }
 
@@ -112,34 +114,34 @@ format_time <- function(x) {
 }
 
 summaryData <- function(input, output, session, activities) {
-  output$summary_chart <- renderPlot({
-    
-    if (input$type=='moving_time') {
-      FUN <- format_time
-    } else {
-      FUN <- scales::comma
-    }
-    
-    if (input$period == 'monthly') {
-      activities() %>% 
-        plotSummaryData(x = 'month_end',
-                        y = input$type,
-                        title = 'Monthly Distance',
-                        date_fmt = '%b \'%y',
-                        y_fmt = FUN
-        )  
-    } else if (input$period == 'weekly') {
-      activities() %>% 
-        plotSummaryData(x = 'week_end',
-                        y = input$type,
-                        title = 'Weekly Distance',
-                        date_fmt = '%Y/%m/%d',
-                        y_fmt = FUN
-        )
-    }
-    
-    
-  })
+  # output$summary_chart <- renderPlot({
+  #   
+  #   if (input$type=='moving_time') {
+  #     FUN <- format_time
+  #   } else {
+  #     FUN <- scales::comma
+  #   }
+  #   
+  #   if (input$period == 'monthly') {
+  #     activities() %>% 
+  #       plotSummaryData(x = 'month_end',
+  #                       y = input$type,
+  #                       title = 'Monthly Distance',
+  #                       date_fmt = '%b \'%y',
+  #                       y_fmt = FUN
+  #       )  
+  #   } else if (input$period == 'weekly') {
+  #     activities() %>% 
+  #       plotSummaryData(x = 'week_end',
+  #                       y = input$type,
+  #                       title = 'Weekly Distance',
+  #                       date_fmt = '%Y/%m/%d',
+  #                       y_fmt = FUN
+  #       )
+  #   }
+  #   
+  #   
+  # })
   
   output$summary_chart2 <- renderHighchart({
     # shiny::validate(
