@@ -97,8 +97,8 @@ summaryDataUI <- function(id) {
     ),
     
     fluidRow(
-      #box(width=6,plotOutput(ns('summary_chart'))),
-      box(width=12,highchartOutput(ns('summary_chart2')))
+      column(12,plotOutput(ns('summary_chart')))
+      #column(12,highchartOutput(ns('summary_chart2')))
     )
     
   )
@@ -114,34 +114,34 @@ format_time <- function(x) {
 }
 
 summaryData <- function(input, output, session, activities) {
-  # output$summary_chart <- renderPlot({
-  #   
-  #   if (input$type=='moving_time') {
-  #     FUN <- format_time
-  #   } else {
-  #     FUN <- scales::comma
-  #   }
-  #   
-  #   if (input$period == 'monthly') {
-  #     activities() %>% 
-  #       plotSummaryData(x = 'month_end',
-  #                       y = input$type,
-  #                       title = 'Monthly Distance',
-  #                       date_fmt = '%b \'%y',
-  #                       y_fmt = FUN
-  #       )  
-  #   } else if (input$period == 'weekly') {
-  #     activities() %>% 
-  #       plotSummaryData(x = 'week_end',
-  #                       y = input$type,
-  #                       title = 'Weekly Distance',
-  #                       date_fmt = '%Y/%m/%d',
-  #                       y_fmt = FUN
-  #       )
-  #   }
-  #   
-  #   
-  # })
+  output$summary_chart <- renderPlot({
+
+    if (input$type=='moving_time') {
+      FUN <- format_time
+    } else {
+      FUN <- scales::comma
+    }
+
+    if (input$period == 'monthly') {
+      activities() %>%
+        plotSummaryData(x = 'month_end',
+                        y = input$type,
+                        title = 'Monthly Distance',
+                        date_fmt = '%b \'%y',
+                        y_fmt = FUN
+        )
+    } else if (input$period == 'weekly') {
+      activities() %>%
+        plotSummaryData(x = 'week_end',
+                        y = input$type,
+                        title = 'Weekly Distance',
+                        date_fmt = '%Y/%m/%d',
+                        y_fmt = FUN
+        )
+    }
+
+
+  })
   
   output$summary_chart2 <- renderHighchart({
     # shiny::validate(
