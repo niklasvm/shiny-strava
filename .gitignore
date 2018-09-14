@@ -1,6 +1,20 @@
+# R data and project files
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
-.stoken
-.Rprofile
+*.rds
+packrat/lib*/
+
+# ignore cache directory
+cache/*
+packrat/lib*/
+packrat/src/*
+.httr-oauth
+
+# credentials.R file
+credentials.R
+config*.yml
+
+# logs
+*.log
