@@ -8,6 +8,7 @@ shinyServer(
     # modules ----
     callModule(summaryData,"summary_data",activities=get_filtered_activities)
     callModule(activityMap,"map",activities=get_filtered_activities)
+    callModule(daytimeHeatmap,"heatmap",activities=get_filtered_activities)
     
     # initialise app parameters
     app_parameters <- reactiveValues()
@@ -22,6 +23,8 @@ shinyServer(
         app_parameters$stoken=readRDS('./cache/stoken.rds')
         app_parameters$token_data=readRDS('./cache/token_data.rds')
         app_parameters$activities=readRDS('./cache/activities.rds')
+        shinyjs::hide(selector = "a[data-value='login']")
+        updateTabItems(session, "menu", "activity_list_tab")
         return()
       }
       
@@ -73,6 +76,10 @@ shinyServer(
           saveRDS(app_parameters$token_data,'./cache/token_data.rds')
           saveRDS(app_parameters$stoken,'./cache/stoken.rds')
           
+          
+          shinyjs::hide(selector = "a[data-value='login']")
+          updateTabItems(session, "menu", "activity_list_tab")
+          
           # 3.2 Download activity list ----
           
           shiny::setProgress(value=0.2,message = 'Connecting to strava')
@@ -112,7 +119,7 @@ shinyServer(
       
       
       
-      
+      # 4. Show/hide ----
       
       # show config panel
       if (!app_parameters$config_loaded) {
@@ -123,9 +130,11 @@ shinyServer(
       
       # show loggin panel
       if (app_parameters$config_loaded & !app_parameters$logged_in) {
-        shinyjs::show('loggin_panel')
+        shinyjs::show(selector = "a[data-value='login']")
+        shinyjs::show('login_panel')
       } else {
-        shinyjs::hide('loggin_panel')
+        shinyjs::hide(selector = "a[data-value='login']")
+        shinyjs::hide('login_panel')
       }
       
     })

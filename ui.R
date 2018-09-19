@@ -45,10 +45,10 @@ config_panel <- shinyjs::hidden(
   )
 )
 
-loggin_panel <- shinyjs::hidden(
+login_panel <- shinyjs::hidden(
   
   fluidRow(
-    id='loggin_panel',
+    id='login_panel',
     box(
       width=12,
       status = 'primary',
@@ -62,28 +62,34 @@ loggin_panel <- shinyjs::hidden(
   )
 )
 
-ui_activity_filters <- div(
-  shiny::selectInput('selected_period',
-                     label='Period',
-                     choices = names(periods),
-                     selected = 'Last 30 days',
-                     multiple = F
-  ),
-  conditionalPanel(
-    condition="input.selected_period == 'Custom'",
-    dateRangeInput(inputId = 'selected_dates',
-                   label = 'Select date range'
+ui_activity_filters <- box(
+  width=12,
+  fluidRow(
+    
+    column(
+      6,
+      shiny::selectInput('selected_period',
+                         label='Period',
+                         choices = names(periods),
+                         selected = 'Last 30 days',
+                         multiple = F
+      ),
+      conditionalPanel(
+        condition="input.selected_period == 'Custom'",
+        dateRangeInput(inputId = 'selected_dates',
+                       label = 'Select date range'
+        )
+      )
+    ),
+    column(
+      6,
+      shiny::selectInput(
+        inputId = 'selected_types',
+        label='Select types',
+        choices='',
+        multiple = T
+      )
     )
-  ),
-  shiny::selectInput(
-    inputId = 'selected_types',
-    label='Select types',
-    choices='',
-    multiple = T
-  ),
-  div(
-    img(src='1.2 strava api logos/powered by Strava/pwrdBy_strava_light/api_logo_pwrdBy_strava_stack_light.png',width=199*.6,height=86*.6),
-    style='display: block;margin-left: auto;margin-right: auto;width: 50%;'
   )
 )
 
@@ -109,26 +115,50 @@ shinyUI(
     
     # SIDEBAR ----
     dashboardSidebar(
-      ui_activity_filters
+      
+      sidebarMenu(
+        id='menu',
+        menuItem('Log In',icon = icon('th'),tabName='login'),
+        menuItem('Activity List',icon = icon('th'),tabName='activity_list_tab'),
+        menuItem('Activities',icon = icon('th'),tabName='activity_tab')
+      ),
+      div(
+        img(src='1.2 strava api logos/powered by Strava/pwrdBy_strava_light/api_logo_pwrdBy_strava_stack_light.png',width=199*.6,height=86*.6),
+        style='display: block;margin-left: auto;margin-right: auto;width: 50%;'
+      )
       #width = 350
     ),
     
     
     dashboardBody(
       useShinyjs(),
-      config_panel,
-      loggin_panel,
-      tabBox(
-        width = 12,
-        tabPanel(
-          'Chart',
-          summaryDataUI('summary_data')
+      tabItems(
+        tabItem(
+          tabName = 'login',
+          config_panel,
+          login_panel
         ),
-        tabPanel(
-          'Map',
-          activityMapUI('map')
+        tabItem(
+          tabName = 'activity_list_tab',
+          
+          ui_activity_filters,
+          tabBox(
+            width = 12,
+            tabPanel(
+              'Chart',
+              summaryDataUI('summary_data')
+            ),
+            tabPanel(
+              'Map',
+              activityMapUI('map')
+            ),
+            tabPanel(
+              'Heatmap',
+              daytimeHeatmapUI('heatmap')
+            )
+            
+          )
         )
-        
       )
     )
   )
