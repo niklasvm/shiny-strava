@@ -1,6 +1,8 @@
 # shiny-strava
 `shiny-strava` is a web application built using `shiny` to display an athlete's workout data in an interactive dashboard. The app uses the `rStrava` R package to connect to Strava's web API to download an athlete's data.
 
+An example of the app is hosted at http://hypercubeza.ddns.net/shiny-strava/
+
 ## Layout
 
 shiny-strava uses a traditional shinydashboard layout with header, sidebar and main panel
